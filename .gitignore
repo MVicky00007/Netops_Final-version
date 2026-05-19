@@ -1,0 +1,56 @@
+# ── Backend (Maven / Spring Boot) ──────────────────────────────────────
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+backend/test-output.log
+backend/ng-new.log
+ng-new.log
+ng-material.log
+
+# Claude Code local session data (not source code)
+.claude/
+
+### Spring Tools Suite ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code (we KEEP launch.json + settings.json so anyone cloning the repo gets
+### the Java/Maven config and the per-service launch configs out of the box) ###
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+
+# ── Frontend (Angular) ─────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.nx/
+frontend/coverage/
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+frontend/.env
+frontend/.env.local
+frontend/*.tsbuildinfo

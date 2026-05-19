@@ -1,0 +1,111 @@
+server:
+  port: 9097                          # Same port the monolith used — clients keep working
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      # ── CORS — allow any localhost port in development ──────────────
+      # `allowedOriginPatterns` supports wildcards (vs `allowedOrigins` which is
+      # an exact-match list). This covers:
+      #   - http://localhost:4200    (Angular dev server)
+      #   - http://localhost:3000    (alt dev port)
+      #   - http://localhost:<random>  (VS Code Simple Browser proxies, etc.)
+      #   - http://127.0.0.1:<any>
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+            allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      routes:
+        # ─── user-service ─────────────────────────────────────────────
+        - id: user-service-auth
+          uri: lb://user-service
+          predicates:
+            - Path=/signup,/login,/forgot-password,/update-profile
+        - id: user-service-admin
+          uri: lb://user-service
+          predicates:
+            - Path=/users,/update-role,/block-user,/approve-user,/pending-users
+
+        # ─── site-service ─────────────────────────────────────────────
+        - id: site-service-sites
+          uri: lb://site-service
+          predicates:
+            - Path=/sites/**
+        - id: site-service-nodes
+          uri: lb://site-service
+          predicates:
+            - Path=/nodes/**
+        - id: site-service-interfaces
+          uri: lb://site-service
+          predicates:
+            - Path=/interfaces/**
+        - id: site-service-vendors
+          uri: lb://site-service
+          predicates:
+            - Path=/vendors/**
+
+        # ─── incident-service ─────────────────────────────────────────
+        - id: incident-service-fault-reports
+          uri: lb://incident-service
+          predicates:
+            - Path=/api/v1/fault-reports/**
+        - id: incident-service-tickets
+          uri: lb://incident-service
+          predicates:
+            - Path=/api/v1/tickets/**
+        - id: incident-service-notifications
+          uri: lb://incident-service
+          predicates:
+            - Path=/api/v1/notifications/**
+
+        # ─── capacity-service ─────────────────────────────────────────
+        - id: capacity-service-plans
+          uri: lb://capacity-service
+          predicates:
+            - Path=/capacity-plans/**
+        - id: capacity-service-records
+          uri: lb://capacity-service
+          predicates:
+            - Path=/capacity-records/**
+        - id: capacity-service-health-checks
+          uri: lb://capacity-service
+          predicates:
+            - Path=/api/v1/health-checks/**
+        - id: capacity-service-kpis
+          uri: lb://capacity-service
+          predicates:
+            - Path=/api/v1/kpis/**
+        - id: capacity-service-reports
+          uri: lb://capacity-service
+          predicates:
+            - Path=/api/v1/reports/**
+
+        # ─── task-service ─────────────────────────────────────────────
+        - id: task-service-tasks
+          uri: lb://task-service
+          predicates:
+            - Path=/api/v1/tasks/**
+        - id: task-service-audit-logs
+          uri: lb://task-service
+          predicates:
+            - Path=/audit-logs/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
