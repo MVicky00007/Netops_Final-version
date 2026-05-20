@@ -2,6 +2,9 @@
 
 A full-stack microservices project: a network-operations management console with role-based dashboards, real-time incident tracking, capacity planning + approvals, health checks, KPIs and a tamper-evident audit log.
 
+> 📖 **Detailed documentation:** [`FRONTEND.md`](FRONTEND.md) · [`BACKEND.md`](BACKEND.md)
+> Both files include code snippets, request-flow diagrams, and design rationale.
+
 ## Architecture
 
 ```
