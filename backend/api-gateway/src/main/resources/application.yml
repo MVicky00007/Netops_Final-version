@@ -9,19 +9,20 @@ spring:
       discovery:
         locator:
           enabled: false
-      # ── CORS — allow any localhost port in development ──────────────
-      # `allowedOriginPatterns` supports wildcards (vs `allowedOrigins` which is
-      # an exact-match list). This covers:
-      #   - http://localhost:4200    (Angular dev server)
-      #   - http://localhost:3000    (alt dev port)
-      #   - http://localhost:<random>  (VS Code Simple Browser proxies, etc.)
-      #   - http://127.0.0.1:<any>
+      # ── CORS — wide-open in dev ─────────────────────────────────────
+      # `allowedOriginPatterns: "*"` plus `allowCredentials: true` is the
+      # universal pattern: Spring echoes back the actual `Origin` request
+      # header in `Access-Control-Allow-Origin`, so this works regardless of
+      # whether the browser opens the app via localhost / 127.0.0.1 / the
+      # machine hostname / a LAN IP / VS Code preview ports.
+      #
+      # IN PRODUCTION, lock this down to your real frontend domain, e.g.:
+      #   allowedOrigins: ["https://netops.example.com"]
       globalcors:
         cors-configurations:
           '[/**]':
             allowedOriginPatterns:
-              - "http://localhost:*"
-              - "http://127.0.0.1:*"
+              - "*"
             allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
             allowedHeaders: "*"
             allowCredentials: true

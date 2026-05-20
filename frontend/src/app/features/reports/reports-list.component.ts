@@ -119,20 +119,52 @@ export class ReportsListComponent implements OnInit {
         <mat-form-field appearance="outline">
           <mat-label>Report type</mat-label>
           <mat-select name="type" [(ngModel)]="model.type" required>
-            <mat-option value="INCIDENT">INCIDENT</mat-option>
-            <mat-option value="CAPACITY">CAPACITY</mat-option>
-            <mat-option value="SLA">SLA</mat-option>
+            <mat-option value="INCIDENT">Incident report</mat-option>
+            <mat-option value="CAPACITY">Capacity report</mat-option>
+            <mat-option value="SLA">SLA compliance report</mat-option>
+          </mat-select>
+          <mat-hint>{{ typeDescription() }}</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Time window</mat-label>
+          <mat-select name="window" [(ngModel)]="model.window" required>
+            <mat-option value="7d">Last 7 days</mat-option>
+            <mat-option value="30d">Last 30 days</mat-option>
+            <mat-option value="90d">Last 90 days</mat-option>
+            <mat-option value="1y">Last 12 months</mat-option>
+            <mat-option value="all">All time</mat-option>
           </mat-select>
         </mat-form-field>
+
+        @if (model.type === 'INCIDENT') {
+          <mat-form-field appearance="outline">
+            <mat-label>Filter by severity (optional)</mat-label>
+            <mat-select name="severity" [(ngModel)]="model.severity">
+              <mat-option [value]="null">All severities</mat-option>
+              <mat-option value="CRITICAL">Critical only</mat-option>
+              <mat-option value="HIGH">High &amp; above</mat-option>
+              <mat-option value="MEDIUM">Medium &amp; above</mat-option>
+            </mat-select>
+          </mat-form-field>
+        }
+
+        @if (model.type === 'SLA') {
+          <mat-form-field appearance="outline">
+            <mat-label>Filter by priority (optional)</mat-label>
+            <mat-select name="priority" [(ngModel)]="model.priority">
+              <mat-option [value]="null">All priorities</mat-option>
+              <mat-option value="P1">P1 only</mat-option>
+              <mat-option value="P2">P2 &amp; above</mat-option>
+            </mat-select>
+          </mat-form-field>
+        }
+
         <mat-form-field appearance="outline">
-          <mat-label>Parameters (JSON, optional)</mat-label>
-          <input matInput name="parametersJson" [(ngModel)]="model.parametersJson"
-                 placeholder='{"window":"30d"}'>
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Output URI (optional)</mat-label>
-          <input matInput name="reportUri" [(ngModel)]="model.reportUri"
-                 placeholder="/reports/my-report.pdf">
+          <mat-label>Title (optional)</mat-label>
+          <input matInput name="title" [(ngModel)]="model.title"
+                 placeholder="e.g. Q4 incident summary">
+          <mat-hint>Used as the filename if you don't provide a custom path</mat-hint>
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
@@ -141,7 +173,9 @@ export class ReportsListComponent implements OnInit {
       </mat-dialog-actions>
     </form>
   `,
-  styles: `.col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }`,
+  styles: `
+    .col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }
+  `,
 })
 export class ReportFormDialog {
   private api = inject(ApiService);
@@ -149,12 +183,44 @@ export class ReportFormDialog {
   private ref = inject(MatDialogRef<ReportFormDialog>);
   private currentUser = inject(CurrentUserService);
 
-  model: any = { type: 'INCIDENT', parametersJson: '', reportUri: '' };
+  model: any = {
+    type: 'INCIDENT',
+    window: '30d',
+    severity: null,
+    priority: null,
+    title: '',
+  };
+
+  typeDescription(): string {
+    switch (this.model.type) {
+      case 'INCIDENT': return 'Open / resolved fault counts, MTTR, top sites by incidents';
+      case 'CAPACITY': return 'Plans, approvals, measured throughput vs target';
+      case 'SLA':      return 'Tickets that breached or met SLA windows';
+      default:         return '';
+    }
+  }
 
   submit() {
     const id = this.currentUser.userId();
     if (!id) { this.snack.open('User id not resolved', 'OK', { duration: 3000 }); return; }
-    this.api.generateReport({ ...this.model, generatedBy: id }).subscribe({
+
+    // Build the parametersJson string from the friendly form fields.
+    const params: Record<string, string> = { window: this.model.window };
+    if (this.model.severity) params['severity'] = this.model.severity;
+    if (this.model.priority) params['priority'] = this.model.priority;
+    if (this.model.title)    params['title']    = this.model.title;
+
+    // Auto-build a reportUri from type + window if user didn't provide a title.
+    const safeTitle = (this.model.title || `${this.model.type.toLowerCase()}-${this.model.window}`)
+                        .toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const reportUri = `/reports/${safeTitle}-${Date.now()}.pdf`;
+
+    this.api.generateReport({
+      type: this.model.type,
+      parametersJson: JSON.stringify(params),
+      reportUri,
+      generatedBy: id,
+    }).subscribe({
       next: () => this.ref.close(true),
       error: (err: any) => this.snack.open(err?.error?.message ?? 'Generation failed', 'OK', { duration: 4000 }),
     });
