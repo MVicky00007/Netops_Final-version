@@ -32,6 +32,16 @@ export class ApiService {
   sites():       Observable<any[]> { return this.http.get<any[]>(`${this.base}/sites`); }
   vendors():     Observable<any[]> { return this.http.get<any[]>(`${this.base}/vendors`); }
 
+  /** Nodes belonging to one site. */
+  nodesBySite(siteId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/sites/${siteId}/nodes`);
+  }
+
+  /** Interfaces belonging to one node. */
+  interfacesByNode(nodeId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/nodes/${nodeId}/interfaces`);
+  }
+
   /** Nodes don't have a "list all" endpoint — fetch all sites and concat their nodes. */
   nodes(): Observable<any[]> {
     return new Observable<any[]>((sub) => {

@@ -156,26 +156,53 @@ export class FaultReportsListComponent implements OnInit {
     <form #f="ngForm" (ngSubmit)="submit()">
       <mat-dialog-content class="grid">
         <mat-form-field appearance="outline">
-          <mat-label>Site ID</mat-label>
-          <input matInput type="number" name="siteId" [(ngModel)]="model.siteId" required>
+          <mat-label>Site</mat-label>
+          <mat-select name="siteId" [(ngModel)]="model.siteId" (selectionChange)="onSiteChange($event.value)" required>
+            @for (s of sites(); track s.siteId) {
+              <mat-option [value]="s.siteId">{{ s.siteCode }} — {{ s.name }}</mat-option>
+            }
+          </mat-select>
         </mat-form-field>
+
         <mat-form-field appearance="outline">
           <mat-label>Severity</mat-label>
           <mat-select name="severity" [(ngModel)]="model.severity" required>
             @for (s of severities; track s) { <mat-option [value]="s">{{ s }}</mat-option> }
           </mat-select>
         </mat-form-field>
+
         <mat-form-field appearance="outline">
-          <mat-label>Node ID (optional)</mat-label>
-          <input matInput type="number" name="nodeId" [(ngModel)]="model.nodeId">
+          <mat-label>Node (optional)</mat-label>
+          <mat-select name="nodeId" [(ngModel)]="model.nodeId" (selectionChange)="onNodeChange($event.value)"
+                      [disabled]="!model.siteId || !nodes().length">
+            <mat-option [value]="null">— none —</mat-option>
+            @for (n of nodes(); track n.nodeId) {
+              <mat-option [value]="n.nodeId">{{ n.hostname }} ({{ n.model || 'node' }})</mat-option>
+            }
+          </mat-select>
+          @if (model.siteId && !nodes().length && !loadingNodes()) {
+            <mat-hint>No nodes at this site</mat-hint>
+          }
         </mat-form-field>
+
         <mat-form-field appearance="outline">
-          <mat-label>Interface ID (optional)</mat-label>
-          <input matInput type="number" name="interfaceId" [(ngModel)]="model.interfaceId">
+          <mat-label>Interface (optional)</mat-label>
+          <mat-select name="interfaceId" [(ngModel)]="model.interfaceId"
+                      [disabled]="!model.nodeId || !interfaces().length">
+            <mat-option [value]="null">— none —</mat-option>
+            @for (i of interfaces(); track i.interfaceId) {
+              <mat-option [value]="i.interfaceId">{{ i.name }} ({{ i.capacityMbps }} Mbps)</mat-option>
+            }
+          </mat-select>
+          @if (model.nodeId && !interfaces().length && !loadingIfaces()) {
+            <mat-hint>No interfaces on this node</mat-hint>
+          }
         </mat-form-field>
+
         <mat-form-field appearance="outline" class="col-span-2">
           <mat-label>Description</mat-label>
-          <textarea matInput rows="3" name="description" [(ngModel)]="model.description" required></textarea>
+          <textarea matInput rows="3" name="description" [(ngModel)]="model.description" required
+                    placeholder="What's wrong? Be specific."></textarea>
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
@@ -189,7 +216,7 @@ export class FaultReportsListComponent implements OnInit {
     .col-span-2 { grid-column: span 2; }
   `,
 })
-export class FaultReportFormDialog {
+export class FaultReportFormDialog implements OnInit {
   private api = inject(ApiService);
   private snack = inject(MatSnackBar);
   private ref = inject(MatDialogRef<FaultReportFormDialog>);
@@ -203,6 +230,43 @@ export class FaultReportFormDialog {
     severity: 'MEDIUM',
     description: '',
   };
+
+  sites      = signal<any[]>([]);
+  nodes      = signal<any[]>([]);
+  interfaces = signal<any[]>([]);
+  loadingNodes  = signal(false);
+  loadingIfaces = signal(false);
+
+  ngOnInit() {
+    this.api.sites().subscribe({
+      next: (s) => this.sites.set(s),
+      error: () => this.snack.open('Could not load sites', 'OK', { duration: 3000 }),
+    });
+  }
+
+  onSiteChange(siteId: number | null) {
+    this.model.nodeId = null;
+    this.model.interfaceId = null;
+    this.nodes.set([]);
+    this.interfaces.set([]);
+    if (!siteId) return;
+    this.loadingNodes.set(true);
+    this.api.nodesBySite(siteId).subscribe({
+      next: (n) => { this.nodes.set(n); this.loadingNodes.set(false); },
+      error: () => { this.nodes.set([]); this.loadingNodes.set(false); },
+    });
+  }
+
+  onNodeChange(nodeId: number | null) {
+    this.model.interfaceId = null;
+    this.interfaces.set([]);
+    if (!nodeId) return;
+    this.loadingIfaces.set(true);
+    this.api.interfacesByNode(nodeId).subscribe({
+      next: (i) => { this.interfaces.set(i); this.loadingIfaces.set(false); },
+      error: () => { this.interfaces.set([]); this.loadingIfaces.set(false); },
+    });
+  }
 
   submit() {
     const userId = this.currentUser.userId();

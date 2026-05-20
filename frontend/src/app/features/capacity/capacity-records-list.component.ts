@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -106,23 +107,47 @@ export class CapacityRecordsListComponent implements OnInit {
 @Component({
   selector: 'app-capacity-record-form-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [CommonModule, FormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
   template: `
     <h2 mat-dialog-title>Record capacity measurement</h2>
     <form #f="ngForm" (ngSubmit)="submit()">
       <mat-dialog-content class="col">
         <mat-form-field appearance="outline">
-          <mat-label>Site ID</mat-label>
-          <input matInput type="number" name="siteId" [(ngModel)]="model.siteId" required>
+          <mat-label>Site</mat-label>
+          <mat-select name="siteId" [(ngModel)]="model.siteId" (selectionChange)="onSiteChange($event.value)" required>
+            @for (s of sites(); track s.siteId) {
+              <mat-option [value]="s.siteId">{{ s.siteCode }} — {{ s.name }}</mat-option>
+            }
+          </mat-select>
         </mat-form-field>
+
         <mat-form-field appearance="outline">
-          <mat-label>Interface ID</mat-label>
-          <input matInput type="number" name="interfaceId" [(ngModel)]="model.interfaceId" required>
+          <mat-label>Node</mat-label>
+          <mat-select name="nodeId" [(ngModel)]="selectedNodeId" (selectionChange)="onNodeChange($event.value)"
+                      [disabled]="!model.siteId || !nodes().length" required>
+            @for (n of nodes(); track n.nodeId) {
+              <mat-option [value]="n.nodeId">{{ n.hostname }}</mat-option>
+            }
+          </mat-select>
+          @if (model.siteId && !nodes().length) { <mat-hint>No nodes at this site</mat-hint> }
         </mat-form-field>
+
         <mat-form-field appearance="outline">
-          <mat-label>Measured capacity (Mbps)</mat-label>
+          <mat-label>Interface</mat-label>
+          <mat-select name="interfaceId" [(ngModel)]="model.interfaceId"
+                      [disabled]="!selectedNodeId || !interfaces().length" required>
+            @for (i of interfaces(); track i.interfaceId) {
+              <mat-option [value]="i.interfaceId">{{ i.name }} (cap {{ i.capacityMbps }} Mbps)</mat-option>
+            }
+          </mat-select>
+          @if (selectedNodeId && !interfaces().length) { <mat-hint>No interfaces on this node</mat-hint> }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Measured throughput (Mbps)</mat-label>
           <input matInput type="number" step="0.01" name="measuredCapacityMbps"
-                 [(ngModel)]="model.measuredCapacityMbps" required min="0">
+                 [(ngModel)]="model.measuredCapacityMbps" required min="0"
+                 placeholder="e.g. 8420.5">
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
@@ -133,13 +158,45 @@ export class CapacityRecordsListComponent implements OnInit {
   `,
   styles: `.col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }`,
 })
-export class CapacityRecordFormDialog {
+export class CapacityRecordFormDialog implements OnInit {
   private api = inject(ApiService);
   private snack = inject(MatSnackBar);
   private ref = inject(MatDialogRef<CapacityRecordFormDialog>);
   private currentUser = inject(CurrentUserService);
 
   model: any = { siteId: null, interfaceId: null, measuredCapacityMbps: null };
+  selectedNodeId: number | null = null;
+
+  sites      = signal<any[]>([]);
+  nodes      = signal<any[]>([]);
+  interfaces = signal<any[]>([]);
+
+  ngOnInit() {
+    this.api.sites().subscribe({
+      next: (s) => this.sites.set(s),
+      error: () => this.snack.open('Could not load sites', 'OK', { duration: 3000 }),
+    });
+  }
+
+  onSiteChange(siteId: number | null) {
+    this.selectedNodeId = null; this.model.interfaceId = null;
+    this.nodes.set([]); this.interfaces.set([]);
+    if (!siteId) return;
+    this.api.nodesBySite(siteId).subscribe({
+      next: (n) => this.nodes.set(n),
+      error: () => this.nodes.set([]),
+    });
+  }
+
+  onNodeChange(nodeId: number | null) {
+    this.model.interfaceId = null;
+    this.interfaces.set([]);
+    if (!nodeId) return;
+    this.api.interfacesByNode(nodeId).subscribe({
+      next: (i) => this.interfaces.set(i),
+      error: () => this.interfaces.set([]),
+    });
+  }
 
   submit() {
     const id = this.currentUser.userId();

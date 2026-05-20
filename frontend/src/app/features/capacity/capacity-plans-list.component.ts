@@ -167,13 +167,36 @@ export class CapacityPlansListComponent implements OnInit {
     <form #f="ngForm" (ngSubmit)="submit()">
       <mat-dialog-content class="grid">
         <mat-form-field appearance="outline">
-          <mat-label>Site ID</mat-label>
-          <input matInput type="number" name="siteId" [(ngModel)]="model.siteId" required>
+          <mat-label>Site</mat-label>
+          <mat-select name="siteId" [(ngModel)]="model.siteId" (selectionChange)="onSiteChange($event.value)" required>
+            @for (s of sites(); track s.siteId) {
+              <mat-option [value]="s.siteId">{{ s.siteCode }} — {{ s.name }}</mat-option>
+            }
+          </mat-select>
         </mat-form-field>
+
         <mat-form-field appearance="outline">
-          <mat-label>Interface ID</mat-label>
-          <input matInput type="number" name="interfaceId" [(ngModel)]="model.interfaceId" required>
+          <mat-label>Node</mat-label>
+          <mat-select name="nodeId" [(ngModel)]="selectedNodeId" (selectionChange)="onNodeChange($event.value)"
+                      [disabled]="!model.siteId || !nodes().length" required>
+            @for (n of nodes(); track n.nodeId) {
+              <mat-option [value]="n.nodeId">{{ n.hostname }}</mat-option>
+            }
+          </mat-select>
+          @if (model.siteId && !nodes().length) { <mat-hint>No nodes at this site</mat-hint> }
         </mat-form-field>
+
+        <mat-form-field appearance="outline" class="col-span-2">
+          <mat-label>Interface</mat-label>
+          <mat-select name="interfaceId" [(ngModel)]="model.interfaceId"
+                      [disabled]="!selectedNodeId || !interfaces().length" required>
+            @for (i of interfaces(); track i.interfaceId) {
+              <mat-option [value]="i.interfaceId">{{ i.name }} ({{ i.capacityMbps }} Mbps)</mat-option>
+            }
+          </mat-select>
+          @if (selectedNodeId && !interfaces().length) { <mat-hint>No interfaces on this node</mat-hint> }
+        </mat-form-field>
+
         <mat-form-field appearance="outline">
           <mat-label>Current capacity (Mbps)</mat-label>
           <input matInput type="number" name="currentCapacity" [(ngModel)]="model.currentCapacity" required min="0">
@@ -184,7 +207,8 @@ export class CapacityPlansListComponent implements OnInit {
         </mat-form-field>
         <mat-form-field appearance="outline" class="col-span-2">
           <mat-label>Reason</mat-label>
-          <textarea matInput rows="3" name="reason" [(ngModel)]="model.reason" required></textarea>
+          <textarea matInput rows="3" name="reason" [(ngModel)]="model.reason" required
+                    placeholder="Why is this capacity change needed?"></textarea>
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
@@ -198,7 +222,7 @@ export class CapacityPlansListComponent implements OnInit {
     .col-span-2 { grid-column: span 2; }
   `,
 })
-export class CapacityPlanFormDialog {
+export class CapacityPlanFormDialog implements OnInit {
   private api = inject(ApiService);
   private snack = inject(MatSnackBar);
   private ref = inject(MatDialogRef<CapacityPlanFormDialog>);
@@ -211,6 +235,42 @@ export class CapacityPlanFormDialog {
     proposedCapacity: null as number | null,
     reason: '',
   };
+
+  // Node is just a UI helper to filter the interface dropdown — not sent to backend.
+  selectedNodeId: number | null = null;
+
+  sites      = signal<any[]>([]);
+  nodes      = signal<any[]>([]);
+  interfaces = signal<any[]>([]);
+
+  ngOnInit() {
+    this.api.sites().subscribe({
+      next: (s) => this.sites.set(s),
+      error: () => this.snack.open('Could not load sites', 'OK', { duration: 3000 }),
+    });
+  }
+
+  onSiteChange(siteId: number | null) {
+    this.selectedNodeId = null;
+    this.model.interfaceId = null;
+    this.nodes.set([]);
+    this.interfaces.set([]);
+    if (!siteId) return;
+    this.api.nodesBySite(siteId).subscribe({
+      next: (n) => this.nodes.set(n),
+      error: () => this.nodes.set([]),
+    });
+  }
+
+  onNodeChange(nodeId: number | null) {
+    this.model.interfaceId = null;
+    this.interfaces.set([]);
+    if (!nodeId) return;
+    this.api.interfacesByNode(nodeId).subscribe({
+      next: (i) => this.interfaces.set(i),
+      error: () => this.interfaces.set([]),
+    });
+  }
 
   submit() {
     const userId = this.currentUser.userId();
