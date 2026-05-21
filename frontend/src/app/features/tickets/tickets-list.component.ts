@@ -27,11 +27,13 @@ import { AuthService } from '../../core/services/auth.service';
 
       <div class="panel">
         @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+        <div class="scroll">
         <table class="dt">
           <thead>
             <tr>
               <th>ID</th><th>Fault</th><th>Priority</th><th>Created by</th>
               <th>Assigned to</th><th>Status</th><th>Created</th><th>Resolved</th>
+              <th>SLA response by</th><th>SLA resolve by</th><th>SLA</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -46,14 +48,24 @@ import { AuthService } from '../../core/services/auth.service';
                 <td><span class="pill" [class]="'pill-' + (t.status || '').toLowerCase()">{{ t.status }}</span></td>
                 <td class="muted">{{ t.createdAt | date:'short' }}</td>
                 <td class="muted">{{ t.resolvedAt ? (t.resolvedAt | date:'short') : '—' }}</td>
+                <td class="muted">{{ t.slaResponseDueAt ? (t.slaResponseDueAt | date:'short') : '—' }}</td>
+                <td class="muted">{{ t.slaResolutionDueAt ? (t.slaResolutionDueAt | date:'short') : '—' }}</td>
+                <td>
+                  @if (t.slaId != null) {
+                    @if (t.slaBreached) {
+                      <span class="sla-pill breached">BREACHED</span>
+                    } @else {
+                      <span class="sla-pill within">WITHIN</span>
+                    }
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
                 <td>
                   <button mat-icon-button [matMenuTriggerFor]="m" matTooltip="Actions">
                     <mat-icon>more_vert</mat-icon>
                   </button>
                   <mat-menu #m="matMenu">
-                    <button mat-menu-item (click)="viewSla(t.ticketId)">
-                      <mat-icon>schedule</mat-icon>View SLA
-                    </button>
                     <button mat-menu-item (click)="viewAttachments(t.ticketId)">
                       <mat-icon>attach_file</mat-icon>View attachments
                     </button>
@@ -68,10 +80,11 @@ import { AuthService } from '../../core/services/auth.service';
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="9" class="empty">No tickets yet.</td></tr>
+              <tr><td colspan="12" class="empty">No tickets yet.</td></tr>
             }
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   `,
@@ -100,6 +113,11 @@ import { AuthService } from '../../core/services/auth.service';
     .pri-p2 { background: #fed7aa; color: #9a3412; }
     .pri-p3 { background: #fef3c7; color: #92400e; }
     .pri-p4 { background: #d1fae5; color: #065f46; }
+    .scroll { overflow-x: auto; }
+    .sla-pill { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+                letter-spacing: 0.05em; text-transform: uppercase; }
+    .sla-pill.within   { background: var(--success-bg); color: var(--success-fg); }
+    .sla-pill.breached { background: var(--danger-bg);  color: var(--danger-fg); }
   `,
 })
 export class TicketsListComponent implements OnInit {
@@ -128,80 +146,8 @@ export class TicketsListComponent implements OnInit {
     });
   }
 
-  viewSla(ticketId: number) {
-    this.dialog.open(SlaDialogComponent, { width: '420px', data: { ticketId } });
-  }
-
   viewAttachments(ticketId: number) {
     this.dialog.open(AttachmentsDialogComponent, { width: '560px', data: { ticketId } });
-  }
-}
-
-// ────────────────────────────────────────────────────────────────────────
-// SLA Record viewer dialog
-// ────────────────────────────────────────────────────────────────────────
-@Component({
-  selector: 'app-sla-dialog',
-  standalone: true,
-  imports: [CommonModule, DatePipe, MatDialogModule, MatIconModule, MatButtonModule, MatProgressBarModule],
-  template: `
-    <h2 mat-dialog-title>
-      <mat-icon>schedule</mat-icon> SLA for ticket #{{ data.ticketId }}
-    </h2>
-    <mat-dialog-content>
-      @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
-      @if (sla(); as s) {
-        <dl class="kv">
-          <dt>SLA record ID</dt><dd class="num">{{ s.slaId }}</dd>
-          <dt>Ticket ID</dt><dd class="num">{{ s.ticketId }}</dd>
-          <dt>Response due</dt><dd>{{ s.responseDueAt | date:'medium' }}</dd>
-          <dt>Resolution due</dt><dd>{{ s.resolutionDueAt | date:'medium' }}</dd>
-          <dt>Breached</dt>
-          <dd>
-            @if (s.breachFlag) {
-              <span class="pill breached">BREACHED</span>
-            } @else {
-              <span class="pill ok">WITHIN SLA</span>
-            }
-          </dd>
-        </dl>
-      } @else if (!loading()) {
-        <div class="empty">
-          <mat-icon>info</mat-icon>
-          <p>No SLA record found for this ticket.</p>
-        </div>
-      }
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Close</button>
-    </mat-dialog-actions>
-  `,
-  styles: `
-    h2 { display: flex; align-items: center; gap: 8px; }
-    .kv { display: grid; grid-template-columns: 130px 1fr; gap: 8px 16px; padding: 12px 0; }
-    .kv dt { color: var(--text-muted); font-weight: 500; }
-    .kv dd { margin: 0; }
-    .num { font-variant-numeric: tabular-nums; font-weight: 500; }
-    .pill { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
-            letter-spacing: 0.04em; text-transform: uppercase; }
-    .pill.breached { background: var(--danger-bg); color: var(--danger-fg); }
-    .pill.ok       { background: var(--success-bg); color: var(--success-fg); }
-    .empty { text-align: center; padding: 24px; color: var(--text-faint); }
-    .empty mat-icon { font-size: 36px !important; height: 36px !important; width: 36px !important; }
-  `,
-})
-export class SlaDialogComponent implements OnInit {
-  private api = inject(ApiService);
-  loading = signal(true);
-  sla = signal<any | null>(null);
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: { ticketId: number }) {}
-
-  ngOnInit() {
-    this.api.ticketSla(this.data.ticketId).subscribe({
-      next: (s) => { this.sla.set(s); this.loading.set(false); },
-      error: () => { this.sla.set(null); this.loading.set(false); },
-    });
   }
 }
 

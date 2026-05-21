@@ -12,7 +12,7 @@ public class IncidentTicketMapper {
     public IncidentTicketResponse toTicketResponse(IncidentTicket ticket) {
         if (ticket == null) return null;
 
-        return IncidentTicketResponse.builder()
+        var b = IncidentTicketResponse.builder()
                 .ticketId(ticket.getTicketId())
                 .faultId(ticket.getFault().getFaultId())
                 .createdByName(ticket.getCreatedBy().getName())
@@ -21,8 +21,18 @@ public class IncidentTicketMapper {
                 .status(ticket.getStatus().name())
                 .createdAt(ticket.getCreatedAt())
                 .resolvedAt(ticket.getResolvedAt())
-                .resolutionNotes(ticket.getResolutionNotes())
-                .build();
+                .resolutionNotes(ticket.getResolutionNotes());
+
+        // Inline SLA so list views don't have to issue per-ticket /sla calls.
+        SLARecord sla = ticket.getSlaRecord();
+        if (sla != null) {
+            b.slaId(sla.getSlaId())
+             .slaResponseDueAt(sla.getResponseDueAt())
+             .slaResolutionDueAt(sla.getResolutionDueAt())
+             .slaBreached(sla.getBreachFlag());
+        }
+
+        return b.build();
     }
 
     public SLARecordResponse toSLAResponse(SLARecord sla) {

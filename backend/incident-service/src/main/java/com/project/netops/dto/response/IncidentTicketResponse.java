@@ -16,4 +16,10 @@ public class IncidentTicketResponse {
     private LocalDateTime createdAt;
     private LocalDateTime resolvedAt;
     private String resolutionNotes;
+
+    // ── SLA inline (saves a second round-trip per ticket) ──
+    private Long          slaId;
+    private LocalDateTime slaResponseDueAt;
+    private LocalDateTime slaResolutionDueAt;
+    private Boolean       slaBreached;
 }
