@@ -142,4 +142,23 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
                 .orElseThrow(() -> new IncidentNotFoundException("SLA not found for Ticket ID: " + ticketId));
         return mapper.toSLAResponse(sla);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TicketAttachmentResponse> listAttachments(Long ticketId) {
+        // Confirm the ticket exists first so callers get a 404 (not an empty list)
+        // when they pass an invalid ticketId.
+        ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IncidentNotFoundException("Ticket not found with ID: " + ticketId));
+
+        return attachmentRepository.findByTicket_TicketIdOrderByUploadedAtDesc(ticketId).stream()
+                .map(a -> TicketAttachmentResponse.builder()
+                        .attachmentId(a.getAttachmentId())
+                        .fileUri(a.getFileUri())
+                        .description(a.getDescription())
+                        .uploadedByName(a.getUploadedBy() != null ? a.getUploadedBy().getName() : null)
+                        .uploadedAt(a.getUploadedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }

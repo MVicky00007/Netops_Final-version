@@ -41,7 +41,9 @@ import { CurrentUserService } from '../../core/services/current-user.service';
         <table class="dt">
           <thead>
             <tr>
-              <th>ID</th><th>Site</th><th>Node</th><th>Reported by</th>
+              <th>ID</th>
+              <th>Site</th><th>Node</th><th>Interface</th>
+              <th>Reported by</th>
               <th>Severity</th><th>Description</th><th>Status</th><th>Reported</th>
               @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) { <th>Update</th> }
             </tr>
@@ -49,9 +51,25 @@ import { CurrentUserService } from '../../core/services/current-user.service';
           <tbody>
             @for (f of rows(); track f.faultId) {
               <tr>
-                <td>{{ f.faultId }}</td>
-                <td>{{ f.siteName || '—' }}</td>
-                <td>{{ f.nodeHostname || '—' }}</td>
+                <td class="num">{{ f.faultId }}</td>
+                <td>
+                  @if (f.siteName) {
+                    <div>{{ f.siteName }}</div>
+                    <small class="muted">#{{ f.siteId }}</small>
+                  } @else { — }
+                </td>
+                <td>
+                  @if (f.nodeHostname) {
+                    <div>{{ f.nodeHostname }}</div>
+                    <small class="muted">#{{ f.nodeId }}</small>
+                  } @else { <span class="muted">—</span> }
+                </td>
+                <td>
+                  @if (f.interfaceName) {
+                    <div>{{ f.interfaceName }}</div>
+                    <small class="muted">#{{ f.interfaceId }}</small>
+                  } @else { <span class="muted">—</span> }
+                </td>
                 <td>{{ f.reportedByName || '—' }}</td>
                 <td><span class="pri" [class]="'pri-' + (f.severity || '').toLowerCase()">{{ f.severity }}</span></td>
                 <td class="ellipsis">{{ f.description }}</td>
@@ -69,7 +87,7 @@ import { CurrentUserService } from '../../core/services/current-user.service';
                 }
               </tr>
             } @empty {
-              <tr><td colspan="9" class="empty">No fault reports yet.</td></tr>
+              <tr><td colspan="10" class="empty">No fault reports yet.</td></tr>
             }
           </tbody>
         </table>
@@ -88,7 +106,9 @@ import { CurrentUserService } from '../../core/services/current-user.service';
     .dt th { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
              color: var(--text-muted); background: #fafbfc; }
     .dt tbody tr:hover { background: rgba(15,23,42,.02); }
-    .ellipsis { max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+    .ellipsis { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+    .num { font-variant-numeric: tabular-nums; font-weight: 500; }
+    .dt td small.muted { font-size: 10px; font-variant-numeric: tabular-nums; }
     .empty { text-align: center; padding: 32px; color: var(--text-faint); }
     .pill { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
             letter-spacing: 0.03em; text-transform: uppercase; }

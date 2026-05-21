@@ -40,10 +40,13 @@ export const routes: Routes = [
       { path: 'sites/:id/edit', canActivate: [roleGuard(['ADMIN', 'MANAGER'])],
         loadComponent: () => import('./features/sites/site-form/site-form.component').then(m => m.SiteFormComponent) },
 
-      // ── Nodes / Vendors ─────────────────────────────────────────
-      { path: 'nodes',   canActivate: [roleGuard([...TECH])],
+      // ── Nodes / Interfaces / Vendors ────────────────────────────
+      { path: 'nodes',      canActivate: [roleGuard([...TECH])],
         loadComponent: () => import('./features/nodes/nodes-list.component').then(m => m.NodesListComponent) },
-      { path: 'vendors', canActivate: [roleGuard([...OPS])],
+      { path: 'interfaces', canActivate: [roleGuard([...TECH])],
+        loadComponent: () => import('./features/interfaces/interfaces-list.component').then(m => m.InterfacesListComponent) },
+      // Vendors page is kept reachable via direct URL but no longer in the sidebar nav.
+      { path: 'vendors',    canActivate: [roleGuard([...OPS])],
         loadComponent: () => import('./features/vendors/vendors-list.component').then(m => m.VendorsListComponent) },
 
       // ── Incidents (visible to everyone) ──────────────────────────

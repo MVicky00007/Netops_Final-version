@@ -36,6 +36,11 @@ import { AuthService } from '../../../core/services/auth.service';
       <mat-card>
         @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
         <table mat-table [dataSource]="sites()" class="full-width">
+          <ng-container matColumnDef="siteId">
+            <th mat-header-cell *matHeaderCellDef>ID</th>
+            <td mat-cell *matCellDef="let s">{{ s.siteId }}</td>
+          </ng-container>
+
           <ng-container matColumnDef="siteCode">
             <th mat-header-cell *matHeaderCellDef>Code</th>
             <td mat-cell *matCellDef="let s">{{ s.siteCode }}</td>
@@ -108,7 +113,7 @@ export class SitesListComponent {
   private siteService = inject(SiteService);
   private snack = inject(MatSnackBar);
 
-  cols = ['siteCode', 'name', 'region', 'address', 'status', 'actions'];
+  cols = ['siteId', 'siteCode', 'name', 'region', 'address', 'status', 'actions'];
   sites = signal<Site[]>([]);
   loading = signal(true);
 

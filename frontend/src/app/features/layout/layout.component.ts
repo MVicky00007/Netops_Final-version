@@ -198,12 +198,12 @@ export class LayoutComponent {
         { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },   // everyone
     ]},
     { label: 'Infrastructure', items: [
-        { label: 'Sites',   icon: 'business', route: '/sites',
+        { label: 'Sites',      icon: 'business',  route: '/sites',
             roles: ['ADMIN', 'MANAGER', 'NETWORK_ENGINEER', 'FIELD_ENGINEER', 'AUDITOR'] },
-        { label: 'Nodes',   icon: 'router',   route: '/nodes',
+        { label: 'Nodes',      icon: 'router',    route: '/nodes',
             roles: ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'] },
-        { label: 'Vendors', icon: 'store',    route: '/vendors',
-            roles: ['ADMIN', 'MANAGER', 'NETWORK_ENGINEER'] },
+        { label: 'Interfaces', icon: 'cable',     route: '/interfaces',
+            roles: ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'] },
     ]},
     { label: 'Incidents', items: [
         { label: 'Fault reports', icon: 'report_problem',      route: '/fault-reports',

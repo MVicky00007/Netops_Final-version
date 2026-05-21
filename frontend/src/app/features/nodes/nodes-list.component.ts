@@ -19,6 +19,7 @@ import { ApiService } from '../../core/services/api.service';
 export class NodesListComponent implements OnInit {
   private api = inject(ApiService);
   cols: ColumnDef[] = [
+    { key: 'nodeId',       label: 'ID', kind: 'number', width: '60px' },
     { key: 'hostname',     label: 'Hostname' },
     { key: 'siteName',     label: 'Site' },
     { key: 'model',        label: 'Model' },

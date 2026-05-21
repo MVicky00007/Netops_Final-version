@@ -65,6 +65,35 @@ export class ApiService {
     });
   }
 
+  /** Same flatten trick for interfaces: walk all nodes → fetch their interfaces. */
+  interfaces(): Observable<any[]> {
+    return new Observable<any[]>((sub) => {
+      this.nodes().subscribe({
+        next: (nodes) => {
+          if (!nodes.length) { sub.next([]); sub.complete(); return; }
+          let pending = nodes.length;
+          const all: any[] = [];
+          nodes.forEach((n) => {
+            this.interfacesByNode(n.nodeId).subscribe({
+              next: (ifs) => {
+                ifs.forEach((i) => all.push({
+                  ...i,
+                  nodeId: n.nodeId,
+                  nodeHostname: n.hostname,
+                  siteId: n.siteId,
+                  siteName: n.siteName,
+                }));
+                if (--pending === 0) { sub.next(all); sub.complete(); }
+              },
+              error: () => { if (--pending === 0) { sub.next(all); sub.complete(); } },
+            });
+          });
+        },
+        error: (e) => sub.error(e),
+      });
+    });
+  }
+
   // ── incident-service (APIResponse wrapped) ───────────────────────────
   faultReports(): Observable<any[]> { return unwrap(this.http.get<ApiResponse<any[]>>(`${this.base}/api/v1/fault-reports`)); }
   createFaultReport(body: any): Observable<any> {
@@ -83,6 +112,14 @@ export class ApiService {
       ? `${this.base}/api/v1/tickets/${ticketId}?status=${status}&notes=${encodeURIComponent(notes)}`
       : `${this.base}/api/v1/tickets/${ticketId}?status=${status}`;
     return this.http.patch<ApiResponse<any>>(url, {}).pipe(map((r) => r.data));
+  }
+
+  ticketSla(ticketId: number): Observable<any> {
+    return this.http.get<ApiResponse<any>>(`${this.base}/api/v1/tickets/${ticketId}/sla`).pipe(map((r) => r.data));
+  }
+
+  ticketAttachments(ticketId: number): Observable<any[]> {
+    return unwrap(this.http.get<ApiResponse<any[]>>(`${this.base}/api/v1/tickets/${ticketId}/attachments`));
   }
 
   notifications(userId: number): Observable<any[]> {

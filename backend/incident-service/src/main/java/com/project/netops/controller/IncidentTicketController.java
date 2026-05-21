@@ -54,6 +54,13 @@ public class IncidentTicketController {
                 HttpStatus.CREATED);
     }
 
+    @GetMapping("/{ticketId}/attachments")
+    public ResponseEntity<APIResponse<List<TicketAttachmentResponse>>> listAttachments(
+            @PathVariable Long ticketId) {
+        return ResponseEntity.ok(
+                new APIResponse<>("SUCCESS", "Fetched attachments", service.listAttachments(ticketId)));
+    }
+
     @GetMapping("/{ticketId}/sla")
     public ResponseEntity<APIResponse<SLARecordResponse>> getSlaRecord(@PathVariable Long ticketId) {
         return ResponseEntity.ok(new APIResponse<>("SUCCESS", "Fetched SLA", service.getSlaRecord(ticketId)));

@@ -10,14 +10,29 @@ public class FaultReportMapper {
     public FaultReportResponse toResponse(FaultReport report) {
         if (report == null) return null;
 
-        return FaultReportResponse.builder()
+        var b = FaultReportResponse.builder()
                 .faultId(report.getFaultId())
-                .reportedByName(report.getReportedBy().getName())
-                .siteName(report.getSite().getName())
+                .reportedById(report.getReportedBy() != null ? report.getReportedBy().getUserId().longValue() : null)
+                .reportedByName(report.getReportedBy() != null ? report.getReportedBy().getName() : null)
+                .siteId(report.getSite() != null ? report.getSite().getSiteId() : null)
+                .siteName(report.getSite() != null ? report.getSite().getName() : null)
                 .severity(report.getSeverity().name())
                 .description(report.getDescription())
                 .status(report.getStatus().name())
-                .reportedAt(report.getReportedAt())
-                .build();
+                .reportedAt(report.getReportedAt());
+
+        // Optional node
+        if (report.getNode() != null) {
+            b.nodeId(report.getNode().getNodeId())
+             .nodeHostname(report.getNode().getHostname());
+        }
+
+        // Optional interface
+        if (report.getIface() != null) {
+            b.interfaceId(report.getIface().getInterfaceId())
+             .interfaceName(report.getIface().getName());
+        }
+
+        return b.build();
     }
 }
