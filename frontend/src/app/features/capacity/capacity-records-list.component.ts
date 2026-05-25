@@ -40,18 +40,18 @@ import { CurrentUserService } from '../../core/services/current-user.service';
         <table class="dt">
           <colgroup>
             <col style="width: 56px" />     <!-- ID -->
-            <col style="width: 200px" />    <!-- Site -->
-            <col style="width: 160px" />    <!-- Interface -->
-            <col style="width: 260px" />    <!-- Utilisation -->
-            <col style="width: 150px" />    <!-- Recorded by -->
-            <col style="width: 140px" />    <!-- Measured at -->
+            <col style="width: 220px" />    <!-- Site -->
+            <col style="width: 180px" />    <!-- Interface -->
+            <col style="width: 160px" />    <!-- Measured -->
+            <col style="width: 160px" />    <!-- Recorded by -->
+            <col style="width: 150px" />    <!-- Measured at -->
           </colgroup>
           <thead>
             <tr>
               <th>ID</th>
               <th>Site</th>
               <th>Interface</th>
-              <th>Utilisation</th>
+              <th class="r">Measured (Mbps)</th>
               <th>Recorded by</th>
               <th>Measured at</th>
             </tr>
@@ -68,27 +68,8 @@ import { CurrentUserService } from '../../core/services/current-user.service';
                 </td>
                 <td>
                   <div class="iface-name">{{ r.interfaceName || '—' }}</div>
-                  @if (r.interfaceCapacityMbps) {
-                    <div class="iface-cap">rated {{ r.interfaceCapacityMbps | number }} Mbps</div>
-                  }
                 </td>
-                <td>
-                  <div class="util-row">
-                    <div class="util-bar">
-                      <div class="util-fill"
-                           [class.util-good]="utilPct(r) < 70"
-                           [class.util-warn]="utilPct(r) >= 70 && utilPct(r) < 90"
-                           [class.util-hot]="utilPct(r) >= 90"
-                           [style.width.%]="Math.min(utilPct(r), 100)"></div>
-                    </div>
-                    <div class="util-meta">
-                      <span class="util-val">{{ r.measuredCapacityMbps | number }}</span>
-                      @if (r.interfaceCapacityMbps) {
-                        <span class="util-pct">{{ utilPct(r).toFixed(0) }}%</span>
-                      }
-                    </div>
-                  </div>
-                </td>
+                <td class="r num strong">{{ r.measuredCapacityMbps | number }}</td>
                 <td>{{ r.recordedByName || '—' }}</td>
                 <td class="muted">{{ r.measuredAt | date:'short' }}</td>
               </tr>
@@ -126,19 +107,9 @@ import { CurrentUserService } from '../../core/services/current-user.service';
 
     .iface-name { font-weight: 500; font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", monospace;
                   font-size: 12px; }
-    .iface-cap  { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
 
-    .util-row { display: flex; flex-direction: column; gap: 4px; }
-    .util-bar { width: 100%; height: 6px; background: #eef2f6; border-radius: 999px;
-                overflow: hidden; }
-    .util-fill { height: 100%; border-radius: 999px; transition: width .25s ease; }
-    .util-good { background: #16a34a; }
-    .util-warn { background: #d97706; }
-    .util-hot  { background: #dc2626; }
-    .util-meta { display: flex; justify-content: space-between; align-items: center;
-                 font-size: 11px; color: var(--text-muted); }
-    .util-val { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); }
-    .util-pct { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .r       { text-align: right; }
+    .strong  { font-weight: 600; }
   `,
 })
 export class CapacityRecordsListComponent implements OnInit {
@@ -148,17 +119,8 @@ export class CapacityRecordsListComponent implements OnInit {
   private currentUser = inject(CurrentUserService);
   private snack = inject(MatSnackBar);
 
-  // Exposed so the template can use Math.min(...) directly in property bindings.
-  protected Math = Math;
-
   rows = signal<any[]>([]);
   loading = signal(true);
-
-  /** Measured throughput as a percentage of the interface's rated capacity. */
-  utilPct(r: any): number {
-    if (!r?.interfaceCapacityMbps || r.interfaceCapacityMbps <= 0) return 0;
-    return (r.measuredCapacityMbps / r.interfaceCapacityMbps) * 100;
-  }
 
   ngOnInit() {
     this.currentUser.resolveId().subscribe();
