@@ -40,14 +40,12 @@ export const routes: Routes = [
       { path: 'sites/:id/edit', canActivate: [roleGuard(['ADMIN', 'MANAGER'])],
         loadComponent: () => import('./features/sites/site-form/site-form.component').then(m => m.SiteFormComponent) },
 
-      // ── Nodes / Interfaces / Vendors ────────────────────────────
+      // ── Nodes / Interfaces ────────────────────────────────────
       { path: 'nodes',      canActivate: [roleGuard([...TECH])],
         loadComponent: () => import('./features/nodes/nodes-list.component').then(m => m.NodesListComponent) },
       { path: 'interfaces', canActivate: [roleGuard([...TECH])],
         loadComponent: () => import('./features/interfaces/interfaces-list.component').then(m => m.InterfacesListComponent) },
-      // Vendors page is kept reachable via direct URL but no longer in the sidebar nav.
-      { path: 'vendors',    canActivate: [roleGuard([...OPS])],
-        loadComponent: () => import('./features/vendors/vendors-list.component').then(m => m.VendorsListComponent) },
+      // (Vendors module removed from scope — see PROBLEM_STATEMENT.pdf §4.2.)
 
       // ── Incidents (visible to everyone) ──────────────────────────
       { path: 'fault-reports', canActivate: [roleGuard([...ALL])],

@@ -164,7 +164,7 @@ export class TasksListComponent implements OnInit {
           <mat-label>Assigned user</mat-label>
           <mat-select name="assignedTo" [(ngModel)]="model.assignedTo" required>
             @for (u of users(); track u.userId) {
-              <mat-option [value]="u.userId">{{ u.username }} — {{ u.role }}</mat-option>
+              <mat-option [value]="u.userId">{{ u.name || u.email }} — {{ u.role }}</mat-option>
             }
           </mat-select>
         </mat-form-field>

@@ -26,6 +26,10 @@ public interface UserService {
 
     String blockUser(Integer userId);
 
+    String unblockUser(Integer userId);
+
+    String deleteUser(Integer userId);
+
     String approveUser(Integer userId);
 
     List<UserResponseDto> getPendingUsers();

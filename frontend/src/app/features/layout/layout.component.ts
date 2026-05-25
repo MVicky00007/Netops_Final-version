@@ -265,7 +265,7 @@ export class LayoutComponent {
     if (!url.length) return 'Dashboard';
     const map: Record<string, string> = {
       dashboard: 'Dashboard', sites: 'Sites', nodes: 'Edge nodes',
-      vendors: 'Vendors', 'fault-reports': 'Fault reports', tickets: 'Tickets',
+      'fault-reports': 'Fault reports', tickets: 'Tickets',
       'capacity-plans': 'Capacity plans', 'capacity-records': 'Capacity records',
       'health-checks': 'Health checks', kpis: 'KPIs', reports: 'Reports',
       tasks: 'My tasks', notifications: 'Notifications', profile: 'Profile',

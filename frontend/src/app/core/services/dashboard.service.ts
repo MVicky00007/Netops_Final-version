@@ -9,7 +9,6 @@ import { ApiResponse } from '../models/api-response.model';
 export interface DashboardStats {
   // common
   sites: number;
-  vendors: number;
   // admin / manager
   users: number;
   pendingUsers: number;
@@ -61,7 +60,6 @@ export class DashboardService {
       users:        safe(this.http.get<User[]>(`${this.api}/users`), []),
       pendingUsers: safe(this.http.get<User[]>(`${this.api}/pending-users`), []),
       sites:        safe(this.http.get<Site[]>(`${this.api}/sites`), []),
-      vendors:      safe(this.http.get<any[]>(`${this.api}/vendors`), []),
       faults:       safe(this.http.get<ApiResponse<any[]>>(`${this.api}/api/v1/fault-reports`),
                          { success: true, message: '', data: [] }),
       tickets:      safe(this.http.get<ApiResponse<any[]>>(`${this.api}/api/v1/tickets`),
@@ -86,7 +84,6 @@ export class DashboardService {
         users: r.users.length,
         pendingUsers: r.pendingUsers.length,
         sites: r.sites.length,
-        vendors: r.vendors.length,
         openFaults: (r.faults.data ?? []).filter((f: any) => f.status === 'OPEN' || f.status === 'IN_PROGRESS').length || (r.faults.data ?? []).length,
         openTickets: (r.tickets.data ?? []).filter((t: any) => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length || (r.tickets.data ?? []).length,
         capacityPlans: (r.plans.data ?? []).length,

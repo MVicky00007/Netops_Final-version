@@ -30,6 +30,12 @@ export class ApiService {
   blockUser(userId: number): Observable<string> {
     return this.http.put(`${this.base}/block-user?userId=${userId}`, {}, { responseType: 'text' });
   }
+  unblockUser(userId: number): Observable<string> {
+    return this.http.put(`${this.base}/unblock-user?userId=${userId}`, {}, { responseType: 'text' });
+  }
+  deleteUser(userId: number): Observable<string> {
+    return this.http.delete(`${this.base}/users/${userId}`, { responseType: 'text' });
+  }
   updateRole(userId: number, role: string): Observable<string> {
     return this.http.put(`${this.base}/update-role?userId=${userId}&role=${role}`, {}, { responseType: 'text' });
   }
@@ -45,7 +51,8 @@ export class ApiService {
     return this.http.put<any>(`${this.base}/sites/${siteId}`, body);
   }
 
-  vendors(): Observable<any[]> { return this.http.get<any[]>(`${this.base}/vendors`); }
+  // Vendors module removed from scope per PROBLEM_STATEMENT.pdf — no `vendors()` method.
+
 
   /** Nodes belonging to one site. */
   nodesBySite(siteId: number): Observable<any[]> {
@@ -145,6 +152,11 @@ export class ApiService {
       ? `${this.base}/api/v1/tickets/${ticketId}?status=${status}&notes=${encodeURIComponent(notes)}`
       : `${this.base}/api/v1/tickets/${ticketId}?status=${status}`;
     return this.http.patch<ApiResponse<any>>(url, {}).pipe(map((r) => r.data));
+  }
+  assignTicket(ticketId: number, assignedToId: number): Observable<any> {
+    return this.http
+      .patch<ApiResponse<any>>(`${this.base}/api/v1/tickets/${ticketId}/assign?assignedToId=${assignedToId}`, {})
+      .pipe(map((r) => r.data));
   }
 
   ticketSla(ticketId: number): Observable<any> {

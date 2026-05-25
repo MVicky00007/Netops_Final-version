@@ -12,6 +12,7 @@ public interface IncidentTicketService {
     List<IncidentTicketResponse> getAllTickets();
     IncidentTicketResponse getTicketById(Long ticketId);
     IncidentTicketResponse updateTicketStatus(Long ticketId, String status, String resolutionNotes);
+    IncidentTicketResponse assignTicket(Long ticketId, Long assignedToId);
     TicketAttachmentResponse uploadAttachment(Long ticketId, TicketAttachmentRequest request);
     List<TicketAttachmentResponse> listAttachments(Long ticketId);
     SLARecordResponse getSlaRecord(Long ticketId);

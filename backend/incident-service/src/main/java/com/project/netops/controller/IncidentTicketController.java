@@ -46,6 +46,13 @@ public class IncidentTicketController {
                 new APIResponse<>("SUCCESS", "Updated ticket", service.updateTicketStatus(ticketId, status, notes)));
     }
 
+    @PatchMapping("/{ticketId}/assign")
+    public ResponseEntity<APIResponse<IncidentTicketResponse>> assignTicket(@PathVariable Long ticketId,
+            @RequestParam Long assignedToId) {
+        return ResponseEntity.ok(new APIResponse<>("SUCCESS", "Ticket reassigned",
+                service.assignTicket(ticketId, assignedToId)));
+    }
+
     @PostMapping("/{ticketId}/attachments")
     public ResponseEntity<APIResponse<TicketAttachmentResponse>> uploadAttachment(@PathVariable Long ticketId,
             @Valid @RequestBody TicketAttachmentRequest request) {

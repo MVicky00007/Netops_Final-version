@@ -109,6 +109,24 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
 
     @Override
     @Transactional
+    @Auditable(action = "ASSIGN_TICKET", resourceType = "IncidentTicket")
+    public IncidentTicketResponse assignTicket(Long ticketId, Long assignedToId) {
+        IncidentTicket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IncidentNotFoundException("Ticket not found with ID: " + ticketId));
+
+        if (ticket.getStatus() == IncidentTicket.Status.CLOSED) {
+            throw new InvalidTicketStateException("Cannot reassign a CLOSED ticket.");
+        }
+
+        User assignee = userRepository.findById(assignedToId.intValue())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + assignedToId));
+
+        ticket.setAssignedTo(assignee);
+        return mapper.toTicketResponse(ticketRepository.save(ticket));
+    }
+
+    @Override
+    @Transactional
     public TicketAttachmentResponse uploadAttachment(Long ticketId, TicketAttachmentRequest request) {
         IncidentTicket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new IncidentNotFoundException("Ticket not found with ID: " + ticketId));

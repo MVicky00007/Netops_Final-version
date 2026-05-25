@@ -147,6 +147,33 @@ public class UserServiceImpl implements UserService {
         return "User blocked successfully";
     }
 
+    // ✅ Unblock User — re-activate a SUSPENDED account
+    @Override
+    public String unblockUser(Integer userId) {
+
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+        if (user.getStatus() == Status.ACTIVE) {
+            throw new AccountNotActiveException("User is already active");
+        }
+
+        user.setStatus(Status.ACTIVE);
+        userRepo.save(user);
+        return "User unblocked successfully";
+    }
+
+    // ✅ Delete User — hard delete, admin only
+    @Override
+    public String deleteUser(Integer userId) {
+
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+        userRepo.delete(user);
+        return "User deleted successfully";
+    }
+
     // ✅ Approve User
     @Override
     public String approveUser(Integer userId) {

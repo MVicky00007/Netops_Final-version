@@ -40,7 +40,7 @@ public class SpringSecurity {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/signup","/login","/forgot-password","/update-profile").permitAll()
                 .requestMatchers("/swagger-ui.html","/swagger-ui/**","/api-docs/**","/v3/api-docs/**","/swagger-resources/**","/webjars/**").permitAll()
-                .requestMatchers("/users", "/update-role", "/block-user","/approve-user", "/pending-users").hasRole("ADMIN")
+                .requestMatchers("/users", "/users/**", "/update-role", "/block-user", "/unblock-user", "/approve-user", "/pending-users").hasRole("ADMIN")
                 .anyRequest().authenticated() // Require authentication for all other endpoints
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
