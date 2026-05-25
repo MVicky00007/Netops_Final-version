@@ -7,17 +7,34 @@ import org.springframework.stereotype.Component;
 @Component
 public class CapacityPlanMapper {
 
+    /**
+     * Build the API response from a CapacityPlan. We resolve the linked Site /
+     * Interface / Requester display names here so the frontend table doesn't
+     * have to make extra round trips per row.
+     */
     public CapacityPlanResponse toResponse(CapacityPlan plan) {
-        return CapacityPlanResponse.builder()
+        var b = CapacityPlanResponse.builder()
                 .planId(plan.getPlanId())
-                .siteId(plan.getSite().getSiteId())
-                .interfaceId(plan.getIface().getInterfaceId())
                 .currentCapacity(plan.getCurrentCapacity())
                 .proposedCapacity(plan.getProposedCapacity())
                 .reason(plan.getReason())
-                .requestedBy(plan.getRequestedBy().getUserId().longValue())
                 .requestedAt(plan.getRequestedAt())
-                .status(plan.getStatus().name())
-                .build();
+                .status(plan.getStatus().name());
+
+        if (plan.getSite() != null) {
+            b.siteId(plan.getSite().getSiteId())
+             .siteCode(plan.getSite().getSiteCode())
+             .siteName(plan.getSite().getName());
+        }
+        if (plan.getIface() != null) {
+            b.interfaceId(plan.getIface().getInterfaceId())
+             .interfaceName(plan.getIface().getName());
+        }
+        if (plan.getRequestedBy() != null) {
+            b.requestedBy(plan.getRequestedBy().getUserId().longValue())
+             .requestedByName(plan.getRequestedBy().getName());
+        }
+
+        return b.build();
     }
 }

@@ -40,48 +40,78 @@ import { CurrentUserService } from '../../core/services/current-user.service';
 
       <div class="panel">
         @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+        <div class="scroll">
         <table class="dt">
+          <colgroup>
+            <col style="width: 56px" />     <!-- ID -->
+            <col style="width: 170px" />    <!-- Site -->
+            <col style="width: 140px" />    <!-- Capacity change -->
+            <col />                         <!-- Reason -->
+            <col style="width: 130px" />    <!-- Requested by -->
+            <col style="width: 95px" />     <!-- Status -->
+            <col style="width: 130px" />    <!-- Requested at -->
+            <col style="width: 240px" />    <!-- Actions -->
+          </colgroup>
           <thead>
             <tr>
-              <th>ID</th><th>Site</th><th>Current (Mbps)</th><th>Proposed (Mbps)</th>
-              <th>Reason</th><th>Requested by</th><th>Status</th><th>Requested</th>
+              <th>ID</th>
+              <th>Site</th>
+              <th>Capacity change</th>
+              <th>Reason</th>
+              <th>Requested by</th>
+              <th>Status</th>
+              <th>Requested</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             @for (p of rows(); track p.planId) {
               <tr>
-                <td>{{ p.planId }}</td>
-                <td>{{ p.siteName || '—' }}</td>
-                <td class="num">{{ p.currentCapacity }}</td>
-                <td class="num">{{ p.proposedCapacity }}</td>
-                <td>{{ p.reason }}</td>
+                <td class="num">{{ p.planId }}</td>
+                <td>
+                  @if (p.siteCode || p.siteName) {
+                    <div class="site-name">{{ p.siteCode || '—' }}</div>
+                    <div class="site-sub">{{ p.siteName }}{{ p.interfaceName ? ' · ' + p.interfaceName : '' }}</div>
+                  } @else { <span class="faint">—</span> }
+                </td>
+                <td>
+                  <div class="cap-change">
+                    <span class="cap-cur">{{ p.currentCapacity | number }}</span>
+                    <mat-icon class="cap-arrow">arrow_forward</mat-icon>
+                    <span class="cap-new">{{ p.proposedCapacity | number }}</span>
+                  </div>
+                  <div class="cap-unit">Mbps</div>
+                </td>
+                <td class="reason" [matTooltip]="p.reason">{{ p.reason }}</td>
                 <td>{{ p.requestedByName || '—' }}</td>
-                <td><span class="pill" [class]="'pill-' + (p.status || '').toLowerCase()">{{ p.status }}</span></td>
+                <td>
+                  <span class="pill" [class]="'pill-' + (p.status || '').toLowerCase()">{{ p.status }}</span>
+                </td>
                 <td class="muted">{{ p.requestedAt | date:'short' }}</td>
                 <td class="actions-cell">
                   <button mat-icon-button (click)="openEvidence(p)" matTooltip="Evidence files">
                     <mat-icon>folder_open</mat-icon>
                   </button>
                   @if (auth.hasRole('ADMIN','MANAGER') && p.status === 'PENDING') {
-                    <button mat-stroked-button color="primary" class="act act-approve"
+                    <button mat-flat-button color="primary" class="act act-approve"
                             (click)="openDecision(p, 'APPROVED')">
-                      <mat-icon>check_circle</mat-icon> Approve
+                      <mat-icon>check_circle</mat-icon>Approve
                     </button>
                     <button mat-stroked-button color="warn" class="act act-reject"
                             (click)="openDecision(p, 'REJECTED')">
-                      <mat-icon>cancel</mat-icon> Reject
+                      <mat-icon>cancel</mat-icon>Reject
                     </button>
-                  } @else if (p.status !== 'PENDING') {
-                    <span class="faint">no action</span>
+                  } @else {
+                    <span class="faint">decision recorded</span>
                   }
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="9" class="empty">No capacity plans yet.</td></tr>
+              <tr><td colspan="8" class="empty">No capacity plans yet.</td></tr>
             }
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   `,
@@ -95,26 +125,49 @@ import { CurrentUserService } from '../../core/services/current-user.service';
 
     .panel { background: #fff; border: 1px solid var(--border-soft); border-radius: 8px;
              overflow: hidden; }
-    .dt { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-    .dt th, .dt td { padding: 9px 14px; text-align: left;
-                     border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+    .scroll { overflow-x: auto; }
+    .dt { width: 100%; border-collapse: collapse; font-size: 12.5px;
+          table-layout: fixed; }
+    .dt th, .dt td { padding: 10px 14px; text-align: left;
+                     border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
     .dt th { font-size: 10.5px; font-weight: 600; text-transform: uppercase;
              letter-spacing: 0.04em; color: var(--text-muted); background: #fafbfc; }
     .dt tbody tr:hover { background: rgba(15,23,42,.02); }
     .num { font-variant-numeric: tabular-nums; font-weight: 500; }
     .empty { text-align: center; padding: 32px; color: var(--text-faint); }
 
-    .pill { font-size: 10px; font-weight: 600; padding: 2px 7px;
-            border-radius: 4px; letter-spacing: 0.03em; text-transform: uppercase; }
+    .site-name { font-weight: 600; font-size: 12.5px; line-height: 1.2; }
+    .site-sub  { font-size: 10.5px; color: var(--text-muted); margin-top: 2px;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .cap-change { display: flex; align-items: center; gap: 6px;
+                  font-variant-numeric: tabular-nums; font-weight: 600; }
+    .cap-cur   { color: var(--text-muted); text-decoration: line-through; }
+    .cap-new   { color: var(--brand-700, #1d4ed8); }
+    .cap-arrow { font-size: 14px !important; height: 14px !important; width: 14px !important;
+                 color: var(--text-faint); }
+    .cap-unit  { font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+                 letter-spacing: 0.05em; margin-top: 1px; }
+
+    .reason { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+              max-width: 320px; }
+
+    .pill { display: inline-block; font-size: 10px; font-weight: 600;
+            padding: 3px 9px; border-radius: 999px;
+            letter-spacing: 0.03em; text-transform: uppercase; }
     .pill-approved  { background: var(--success-bg); color: var(--success-fg); }
     .pill-pending, .pill-draft { background: var(--warn-bg); color: var(--warn-fg); }
     .pill-rejected  { background: var(--danger-bg); color: var(--danger-fg); }
     .pill-implemented { background: var(--info-bg); color: var(--info-fg); }
 
-    .actions-cell { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-    .act { line-height: 28px; min-height: 32px; padding: 0 10px; font-size: 12px; }
+    .actions-cell { white-space: nowrap; }
+    .act { line-height: 28px; min-height: 32px; padding: 0 12px; font-size: 12px;
+           margin-left: 4px; }
     .act mat-icon { font-size: 16px !important; height: 16px !important; width: 16px !important;
-                    margin-right: 2px; vertical-align: middle; }
+                    margin-right: 4px; vertical-align: middle; }
+    .act-reject { background: #fff; }
+    .faint { color: var(--text-faint); font-size: 11.5px; font-style: italic;
+             margin-left: 6px; }
   `,
 })
 export class CapacityPlansListComponent implements OnInit {
