@@ -94,18 +94,21 @@ public class FaultReportServiceImpl implements FaultReportService {
     }
 
     /**
-     * Pick any active network engineer (round-robin would be nicer, but the
-     * MVP just picks the first match) and create a Task + Notification on the
-     * fault so it appears in their work queue immediately.
+     * Notify EVERY active NETWORK_ENGINEER (task-pool pattern). Triage is a
+     * team responsibility — whoever spots and claims a fault first handles
+     * it; the others can mark their copy CANCELLED or COMPLETED.
+     *
+     * The previous implementation used findFirst(), which sent everything to
+     * the same engineer (alphabetically) and never reached anyone else, so
+     * Priya / Vicky / etc. never saw a triage task.
      */
     private void notifyNetworkEngineer(FaultReport fault) {
-        User assignee = userRepository.findAll().stream()
+        List<User> engineers = userRepository.findAll().stream()
                 .filter(u -> u.getRole() == User.Role.NETWORK_ENGINEER
                           && u.getStatus() == User.Status.ACTIVE)
-                .findFirst()
-                .orElse(null);
+                .collect(Collectors.toList());
 
-        if (assignee == null) {
+        if (engineers.isEmpty()) {
             log.warn("No active NETWORK_ENGINEER available to triage fault #{}", fault.getFaultId());
             return;
         }
@@ -114,25 +117,28 @@ public class FaultReportServiceImpl implements FaultReportService {
                 + (fault.getNode() != null ? " / " + fault.getNode().getHostname() : "")
                 + (fault.getIface() != null ? " / " + fault.getIface().getName() : "");
 
-        Task triage = Task.builder()
-                .user(assignee)
-                .relatedEntityId(fault.getFaultId())
-                .description("Triage fault #" + fault.getFaultId() + " (" + fault.getSeverity()
-                        + ") at " + location + ": " + fault.getDescription())
-                .dueDate(LocalDate.now().plusDays(1))
-                .status(Task.Status.PENDING)
-                .build();
-        taskRepository.save(triage);
+        for (User engineer : engineers) {
+            Task triage = Task.builder()
+                    .user(engineer)
+                    .relatedEntityId(fault.getFaultId())
+                    .description("Triage fault #" + fault.getFaultId() + " (" + fault.getSeverity()
+                            + ") at " + location + ": " + fault.getDescription())
+                    .dueDate(LocalDate.now().plusDays(1))
+                    .status(Task.Status.PENDING)
+                    .build();
+            taskRepository.save(triage);
 
-        Notification notif = Notification.builder()
-                .user(assignee)
-                .entityId(fault.getFaultId())
-                .message("New " + fault.getSeverity() + " fault reported at " + location
-                        + " — please triage and escalate to a ticket if needed.")
-                .category(Notification.Category.TICKET)
-                .status(Notification.Status.UNREAD)
-                .build();
-        notificationRepository.save(notif);
+            Notification notif = Notification.builder()
+                    .user(engineer)
+                    .entityId(fault.getFaultId())
+                    .message("New " + fault.getSeverity() + " fault reported at " + location
+                            + " — please triage and escalate to a ticket if needed.")
+                    .category(Notification.Category.TICKET)
+                    .status(Notification.Status.UNREAD)
+                    .build();
+            notificationRepository.save(notif);
+        }
+        log.info("Fanned out fault #{} triage to {} network engineers", fault.getFaultId(), engineers.size());
     }
 
     @Override
