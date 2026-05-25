@@ -56,3 +56,6 @@ frontend/.env.local
 frontend/*.tsbuildinfo
 
 .gitmsg.tmp
+
+# Local upload storage (per-service)
+backend/*/uploads/
