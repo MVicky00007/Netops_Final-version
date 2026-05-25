@@ -1,13 +1,14 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, Inject, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { ApiService } from '../../core/services/api.service';
@@ -16,7 +17,7 @@ import { AuthService } from '../../core/services/auth.service';
 @Component({
   selector: 'app-kpis-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatDialogModule, MatProgressBarModule],
+  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatDialogModule, MatProgressBarModule, MatTooltipModule],
   template: `
     <div class="page">
       <div class="hdr">
@@ -25,7 +26,7 @@ import { AuthService } from '../../core/services/auth.service';
           <p class="muted">Tracked service-quality metrics</p>
         </div>
         @if (auth.hasRole('ADMIN','MANAGER')) {
-          <button mat-flat-button color="primary" (click)="openCreate()">
+          <button mat-flat-button color="primary" (click)="openForm()">
             <mat-icon>add</mat-icon> New KPI
           </button>
         }
@@ -35,7 +36,7 @@ import { AuthService } from '../../core/services/auth.service';
         @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
         <table class="dt">
           <thead>
-            <tr><th>ID</th><th>Name</th><th>Definition</th><th>Target</th><th>Current</th><th>Period</th></tr>
+            <tr><th>ID</th><th>Name</th><th>Definition</th><th>Target</th><th>Current</th><th>Period</th><th>Actions</th></tr>
           </thead>
           <tbody>
             @for (k of rows(); track k.kpiId) {
@@ -46,9 +47,16 @@ import { AuthService } from '../../core/services/auth.service';
                 <td class="num">{{ k.targetValue }}</td>
                 <td class="num" [class.good]="k.currentValue >= k.targetValue">{{ k.currentValue }}</td>
                 <td>{{ k.reportingPeriod }}</td>
+                <td>
+                  @if (auth.hasRole('ADMIN','MANAGER')) {
+                    <button mat-icon-button (click)="openForm(k)" matTooltip="Edit">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  }
+                </td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="empty">No KPIs yet.</td></tr>
+              <tr><td colspan="7" class="empty">No KPIs yet.</td></tr>
             }
           </tbody>
         </table>
@@ -91,10 +99,10 @@ export class KpisListComponent implements OnInit {
     });
   }
 
-  openCreate() {
-    const ref = this.dialog.open(KpiFormDialog, { width: '420px' });
+  openForm(kpi?: any) {
+    const ref = this.dialog.open(KpiFormDialog, { width: '440px', data: { kpi: kpi ?? null } });
     ref.afterClosed().subscribe((ok) => {
-      if (ok) { this.snack.open('KPI created', 'OK', { duration: 2500 }); this.refresh(); }
+      if (ok) { this.snack.open(kpi ? 'KPI updated' : 'KPI created', 'OK', { duration: 2500 }); this.refresh(); }
     });
   }
 }
@@ -104,7 +112,7 @@ export class KpisListComponent implements OnInit {
   standalone: true,
   imports: [CommonModule, FormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
   template: `
-    <h2 mat-dialog-title>Create KPI</h2>
+    <h2 mat-dialog-title>{{ data.kpi ? 'Edit KPI' : 'Create KPI' }}</h2>
     <form #f="ngForm" (ngSubmit)="submit()">
       <mat-dialog-content class="col">
         <mat-form-field appearance="outline">
@@ -138,7 +146,9 @@ export class KpisListComponent implements OnInit {
       </mat-dialog-content>
       <mat-dialog-actions align="end">
         <button mat-button mat-dialog-close type="button">Cancel</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">Create</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">
+          {{ data.kpi ? 'Save' : 'Create' }}
+        </button>
       </mat-dialog-actions>
     </form>
   `,
@@ -152,12 +162,21 @@ export class KpiFormDialog {
   private snack = inject(MatSnackBar);
   private ref = inject(MatDialogRef<KpiFormDialog>);
 
-  model: any = { name: '', definition: '', targetValue: null, currentValue: null, reportingPeriod: 'MONTHLY' };
+  model: any;
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { kpi: any | null }) {
+    this.model = data.kpi
+      ? { ...data.kpi }
+      : { name: '', definition: '', targetValue: null, currentValue: null, reportingPeriod: 'MONTHLY' };
+  }
 
   submit() {
-    this.api.createKpi(this.model).subscribe({
+    const op = this.data.kpi
+      ? this.api.updateKpi(this.data.kpi.kpiId, this.model)
+      : this.api.createKpi(this.model);
+    op.subscribe({
       next: () => this.ref.close(true),
-      error: (err: any) => this.snack.open(err?.error?.message ?? 'Creation failed', 'OK', { duration: 4000 }),
+      error: (err: any) => this.snack.open(err?.error?.message ?? 'Save failed', 'OK', { duration: 4000 }),
     });
   }
 }

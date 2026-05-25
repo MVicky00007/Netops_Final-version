@@ -1,14 +1,15 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, Inject, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { ApiService } from '../../core/services/api.service';
@@ -21,7 +22,7 @@ import { CurrentUserService } from '../../core/services/current-user.service';
   imports: [
     CommonModule, DatePipe, FormsModule,
     MatButtonModule, MatIconModule, MatDialogModule, MatFormFieldModule,
-    MatInputModule, MatSelectModule, MatMenuModule, MatProgressBarModule,
+    MatInputModule, MatSelectModule, MatMenuModule, MatProgressBarModule, MatTooltipModule,
   ],
   template: `
     <div class="page">
@@ -44,7 +45,7 @@ import { CurrentUserService } from '../../core/services/current-user.service';
             <tr>
               <th>ID</th><th>Site</th><th>Current (Mbps)</th><th>Proposed (Mbps)</th>
               <th>Reason</th><th>Requested by</th><th>Status</th><th>Requested</th>
-              @if (auth.hasRole('ADMIN','MANAGER')) { <th>Actions</th> }
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -58,16 +59,17 @@ import { CurrentUserService } from '../../core/services/current-user.service';
                 <td>{{ p.requestedByName || '—' }}</td>
                 <td><span class="pill" [class]="'pill-' + (p.status || '').toLowerCase()">{{ p.status }}</span></td>
                 <td class="muted">{{ p.requestedAt | date:'short' }}</td>
-                @if (auth.hasRole('ADMIN','MANAGER')) {
-                  <td>
-                    @if (p.status === 'PENDING') {
-                      <button mat-icon-button color="primary" (click)="decide(p.planId, 'APPROVED')"
-                              matTooltip="Approve"><mat-icon>check_circle</mat-icon></button>
-                      <button mat-icon-button color="warn" (click)="decide(p.planId, 'REJECTED')"
-                              matTooltip="Reject"><mat-icon>cancel</mat-icon></button>
-                    } @else { <span class="faint">—</span> }
-                  </td>
-                }
+                <td>
+                  <button mat-icon-button (click)="openEvidence(p)" matTooltip="Evidence files">
+                    <mat-icon>folder_open</mat-icon>
+                  </button>
+                  @if (auth.hasRole('ADMIN','MANAGER') && p.status === 'PENDING') {
+                    <button mat-icon-button color="primary" (click)="decide(p.planId, 'APPROVED')"
+                            matTooltip="Approve"><mat-icon>check_circle</mat-icon></button>
+                    <button mat-icon-button color="warn" (click)="decide(p.planId, 'REJECTED')"
+                            matTooltip="Reject"><mat-icon>cancel</mat-icon></button>
+                  }
+                </td>
               </tr>
             } @empty {
               <tr><td colspan="9" class="empty">No capacity plans yet.</td></tr>
@@ -138,6 +140,10 @@ export class CapacityPlansListComponent implements OnInit {
         this.refresh();
       }
     });
+  }
+
+  openEvidence(plan: any) {
+    this.dialog.open(PlanEvidenceDialog, { width: '640px', data: { plan } });
   }
 
   decide(planId: number, status: 'APPROVED' | 'REJECTED') {
@@ -278,6 +284,147 @@ export class CapacityPlanFormDialog implements OnInit {
     this.api.createCapacityPlan({ ...this.model, requestedBy: userId }).subscribe({
       next: () => this.ref.close(true),
       error: (err: any) => this.snack.open(err?.error?.message ?? 'Submission failed', 'OK', { duration: 4000 }),
+    });
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Evidence files viewer / uploader for a capacity plan
+// ────────────────────────────────────────────────────────────────────────
+@Component({
+  selector: 'app-plan-evidence-dialog',
+  standalone: true,
+  imports: [
+    CommonModule, DatePipe, FormsModule,
+    MatDialogModule, MatButtonModule, MatIconModule, MatProgressBarModule,
+    MatFormFieldModule, MatInputModule, MatTooltipModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>
+      <mat-icon>folder_open</mat-icon> Evidence for plan #{{ data.plan.planId }}
+    </h2>
+    <mat-dialog-content>
+      @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+      @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER')) {
+        <div class="uploader">
+          <input #fileInput type="file" hidden (change)="onFile($event)">
+          <button mat-stroked-button type="button" (click)="fileInput.click()">
+            <mat-icon>upload_file</mat-icon> Choose file
+          </button>
+          <span class="fname">{{ file?.name || 'No file chosen' }}</span>
+          <mat-form-field appearance="outline" class="notes">
+            <mat-label>Notes (optional)</mat-label>
+            <input matInput [(ngModel)]="notes" name="notes">
+          </mat-form-field>
+          <button mat-flat-button color="primary" (click)="upload()" [disabled]="!file || uploading()">
+            <mat-icon>cloud_upload</mat-icon> Upload
+          </button>
+        </div>
+      }
+
+      @if (items().length) {
+        <table class="dt">
+          <thead><tr><th>ID</th><th>File</th><th>Notes</th><th>Uploaded by</th><th>When</th><th></th></tr></thead>
+          <tbody>
+            @for (e of items(); track e.evidenceId) {
+              <tr>
+                <td class="num">{{ e.evidenceId }}</td>
+                <td><strong>{{ e.fileName || ('Evidence ' + e.evidenceId) }}</strong></td>
+                <td>{{ e.notes || '—' }}</td>
+                <td>{{ e.uploadedByName || '—' }}</td>
+                <td class="muted">{{ e.uploadedAt | date:'short' }}</td>
+                <td>
+                  <button mat-icon-button (click)="download(e)" matTooltip="Download">
+                    <mat-icon>download</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else if (!loading()) {
+        <div class="empty"><mat-icon>cloud_off</mat-icon><p>No evidence uploaded for this plan.</p></div>
+      }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Close</button>
+    </mat-dialog-actions>
+  `,
+  styles: `
+    h2 { display: flex; align-items: center; gap: 8px; }
+    .uploader { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0 16px; }
+    .uploader .notes { flex: 1 1 200px; }
+    .fname { font-size: 12px; color: var(--text-muted); }
+    .dt { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+    .dt th, .dt td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+    .dt th { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
+             letter-spacing: 0.04em; background: #fafbfc; }
+    .num { font-variant-numeric: tabular-nums; font-weight: 500; }
+    .muted { color: var(--text-muted); }
+    .empty { text-align: center; padding: 32px; color: var(--text-faint); }
+    .empty mat-icon { font-size: 36px !important; height: 36px !important; width: 36px !important; }
+  `,
+})
+export class PlanEvidenceDialog implements OnInit {
+  protected auth = inject(AuthService);
+  private api = inject(ApiService);
+  private snack = inject(MatSnackBar);
+  private currentUser = inject(CurrentUserService);
+
+  items = signal<any[]>([]);
+  loading = signal(true);
+  uploading = signal(false);
+  file: File | null = null;
+  notes = '';
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { plan: any }) {}
+
+  ngOnInit() { this.refresh(); }
+
+  refresh() {
+    this.loading.set(true);
+    this.api.planEvidence(this.data.plan.planId).subscribe({
+      next: (r) => { this.items.set(r); this.loading.set(false); },
+      error: () => { this.items.set([]); this.loading.set(false); },
+    });
+  }
+
+  onFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.file = input.files?.[0] ?? null;
+  }
+
+  upload() {
+    if (!this.file) return;
+    const userId = this.currentUser.userId();
+    if (!userId) { this.snack.open('User id not resolved', 'OK', { duration: 3000 }); return; }
+    this.uploading.set(true);
+    this.api.uploadPlanEvidence(this.data.plan.planId, this.file, userId, this.notes || undefined).subscribe({
+      next: () => {
+        this.uploading.set(false);
+        this.file = null; this.notes = '';
+        this.snack.open('Evidence uploaded', 'OK', { duration: 2500 });
+        this.refresh();
+      },
+      error: (err: any) => {
+        this.uploading.set(false);
+        this.snack.open(err?.error?.message ?? 'Upload failed', 'OK', { duration: 4000 });
+      },
+    });
+  }
+
+  download(e: any) {
+    this.api.downloadPlanEvidence(this.data.plan.planId, e.evidenceId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = e.fileName || `evidence-${e.evidenceId}`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err: any) => this.snack.open(err?.error?.message ?? 'Download failed', 'OK', { duration: 3000 }),
     });
   }
 }
