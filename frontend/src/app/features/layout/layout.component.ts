@@ -11,6 +11,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AuthService } from '../../core/services/auth.service';
+import { CurrentUserService } from '../../core/services/current-user.service';
 import { UserRole } from '../../core/models/user.model';
 
 interface NavSection { label: string; items: NavItem[]; }
@@ -182,6 +183,7 @@ interface NavItem    { label: string; icon: string; route: string; roles?: UserR
 })
 export class LayoutComponent {
   protected auth = inject(AuthService);
+  private currentUser = inject(CurrentUserService);
   private router = inject(Router);
   protected env = 'dev';
 
@@ -274,5 +276,9 @@ export class LayoutComponent {
     return map[url[0]] ?? url[0].charAt(0).toUpperCase() + url[0].slice(1);
   }
 
-  logout() { this.auth.logout(); this.router.navigate(['/login']); }
+  logout() {
+    this.auth.logout();
+    this.currentUser.reset();   // critical: drop the cached numeric user id
+    this.router.navigate(['/login']);
+  }
 }
