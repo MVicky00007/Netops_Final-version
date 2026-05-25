@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, Inject, OnInit, inject, signal } from '@angular/core';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -75,13 +76,20 @@ import { CurrentUserService } from '../../core/services/current-user.service';
                 <td class="ellipsis">{{ f.description }}</td>
                 <td><span class="pill" [class]="'pill-' + (f.status || '').toLowerCase()">{{ f.status }}</span></td>
                 <td class="muted">{{ f.reportedAt | date:'short' }}</td>
-                @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) {
+                @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER','MANAGER')) {
                   <td>
                     <button mat-icon-button [matMenuTriggerFor]="m"><mat-icon>more_vert</mat-icon></button>
                     <mat-menu #m="matMenu">
-                      <button mat-menu-item (click)="updateStatus(f.faultId, 'IN_PROGRESS')"><mat-icon>play_arrow</mat-icon>Mark in progress</button>
-                      <button mat-menu-item (click)="updateStatus(f.faultId, 'RESOLVED')"><mat-icon>check_circle</mat-icon>Mark resolved</button>
-                      <button mat-menu-item (click)="updateStatus(f.faultId, 'CLOSED')"><mat-icon>archive</mat-icon>Close</button>
+                      @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER') && f.status !== 'CLOSED') {
+                        <button mat-menu-item (click)="escalate(f)">
+                          <mat-icon>confirmation_number</mat-icon>Escalate to ticket
+                        </button>
+                      }
+                      @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) {
+                        <button mat-menu-item (click)="updateStatus(f.faultId, 'IN_PROGRESS')"><mat-icon>play_arrow</mat-icon>Mark in progress</button>
+                        <button mat-menu-item (click)="updateStatus(f.faultId, 'RESOLVED')"><mat-icon>check_circle</mat-icon>Mark resolved</button>
+                        <button mat-menu-item (click)="updateStatus(f.faultId, 'CLOSED')"><mat-icon>archive</mat-icon>Close</button>
+                      }
                     </mat-menu>
                   </td>
                 }
@@ -150,6 +158,16 @@ export class FaultReportsListComponent implements OnInit {
     const ref = this.dialog.open(FaultReportFormDialog, { width: '480px' });
     ref.afterClosed().subscribe((created) => {
       if (created) { this.snack.open('Fault reported', 'OK', { duration: 2500 }); this.refresh(); }
+    });
+  }
+
+  escalate(fault: any) {
+    const ref = this.dialog.open(EscalateToTicketDialog, { width: '460px', data: { fault } });
+    ref.afterClosed().subscribe((created) => {
+      if (created) {
+        this.snack.open(`Ticket #${created.ticketId} opened for fault #${fault.faultId}`, 'OK', { duration: 3500 });
+        this.refresh();
+      }
     });
   }
 
@@ -298,6 +316,112 @@ export class FaultReportFormDialog implements OnInit {
     this.api.createFaultReport(body).subscribe({
       next: () => this.ref.close(true),
       error: (err: any) => this.snack.open(err?.error?.message ?? 'Submission failed', 'OK', { duration: 4000 }),
+    });
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Escalate-to-ticket dialog
+//
+// Opens an incident ticket linked to a fault report. Backend auto-creates
+// the matching SLA record (response due 1h, resolution due 4h for P1 / 24h
+// for others), so this is the single step that turns a "reported fault"
+// into a "tracked incident".
+// ────────────────────────────────────────────────────────────────────────
+@Component({
+  selector: 'app-escalate-to-ticket-dialog',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule,
+    MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatIconModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>
+      <mat-icon>confirmation_number</mat-icon> Escalate fault #{{ data.fault.faultId }} to ticket
+    </h2>
+    <form #f="ngForm" (ngSubmit)="submit()">
+      <mat-dialog-content class="col">
+        <p class="muted ctx">
+          {{ data.fault.siteName }} ·
+          {{ data.fault.nodeHostname || '—' }} ·
+          severity <strong>{{ data.fault.severity }}</strong>
+        </p>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Priority</mat-label>
+          <mat-select name="priority" [(ngModel)]="model.priority" required>
+            <mat-option value="P1">P1 — Critical (resolve in 4h)</mat-option>
+            <mat-option value="P2">P2 — High (resolve in 24h)</mat-option>
+            <mat-option value="P3">P3 — Medium (resolve in 24h)</mat-option>
+            <mat-option value="P4">P4 — Low (resolve in 24h)</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Assign to (optional)</mat-label>
+          <mat-select name="assignedToId" [(ngModel)]="model.assignedToId">
+            <mat-option [value]="null">— Leave unassigned —</mat-option>
+            @for (u of assignees(); track u.userId) {
+              <mat-option [value]="u.userId">{{ u.name || u.email }} — {{ u.role }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close type="button">Cancel</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">
+          Open ticket
+        </button>
+      </mat-dialog-actions>
+    </form>
+  `,
+  styles: `
+    h2 { display: flex; align-items: center; gap: 8px; }
+    .col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }
+    .ctx { font-size: 12px; margin: 0 0 8px; }
+    .muted { color: var(--text-muted); }
+  `,
+})
+export class EscalateToTicketDialog implements OnInit {
+  private api = inject(ApiService);
+  private snack = inject(MatSnackBar);
+  private ref = inject(MatDialogRef<EscalateToTicketDialog>);
+  private currentUser = inject(CurrentUserService);
+
+  assignees = signal<any[]>([]);
+  model: any = { priority: 'P3', assignedToId: null };
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { fault: any }) {
+    // Default priority is derived from fault severity.
+    const sev = (data.fault.severity || '').toUpperCase();
+    this.model.priority =
+      sev === 'CRITICAL' ? 'P1' :
+      sev === 'HIGH'     ? 'P2' :
+      sev === 'MEDIUM'   ? 'P3' : 'P4';
+  }
+
+  ngOnInit() {
+    // Only show users who can actually work on incidents.
+    this.api.users().subscribe({
+      next: (u) => this.assignees.set(
+        u.filter((x) => ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'].includes(x.role))
+      ),
+    });
+  }
+
+  submit() {
+    const me = this.currentUser.userId();
+    if (!me) { this.snack.open('User id not resolved yet', 'OK', { duration: 3000 }); return; }
+    const body: any = {
+      faultId: this.data.fault.faultId,
+      createdById: me,
+      priority: this.model.priority,
+    };
+    if (this.model.assignedToId) body.assignedToId = this.model.assignedToId;
+
+    this.api.createTicket(body).subscribe({
+      next: (created) => this.ref.close(created),
+      error: (err: any) => this.snack.open(err?.error?.message ?? 'Could not open ticket', 'OK', { duration: 4000 }),
     });
   }
 }

@@ -1,15 +1,20 @@
 import { Component, Inject, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
+import { CurrentUserService } from '../../core/services/current-user.service';
 
 @Component({
   selector: 'app-tickets-list',
@@ -23,6 +28,11 @@ import { AuthService } from '../../core/services/auth.service';
           <h1>Incident tickets</h1>
           <p class="muted">Open and resolved incidents with SLA tracking</p>
         </div>
+        @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER')) {
+          <button mat-flat-button color="primary" (click)="openCreate()">
+            <mat-icon>add</mat-icon> New ticket
+          </button>
+        }
       </div>
 
       <div class="panel">
@@ -148,6 +158,121 @@ export class TicketsListComponent implements OnInit {
 
   viewAttachments(ticketId: number) {
     this.dialog.open(AttachmentsDialogComponent, { width: '560px', data: { ticketId } });
+  }
+
+  openCreate() {
+    const ref = this.dialog.open(NewTicketDialogComponent, { width: '500px' });
+    ref.afterClosed().subscribe((created) => {
+      if (created) {
+        this.snack.open(`Ticket #${created.ticketId} opened`, 'OK', { duration: 3000 });
+        this.refresh();
+      }
+    });
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// New-ticket dialog — pick an open fault report, set priority + assignee.
+// Backend auto-creates the SLA record on save.
+// ────────────────────────────────────────────────────────────────────────
+@Component({
+  selector: 'app-new-ticket-dialog',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, MatDialogModule,
+    MatFormFieldModule, MatInputModule, MatSelectModule,
+    MatButtonModule, MatIconModule, MatProgressBarModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>
+      <mat-icon>confirmation_number</mat-icon> Open new incident ticket
+    </h2>
+    <form #f="ngForm" (ngSubmit)="submit()">
+      <mat-dialog-content class="col">
+        @if (loadingFaults()) { <mat-progress-bar mode="indeterminate" /> }
+
+        <mat-form-field appearance="outline">
+          <mat-label>Fault report</mat-label>
+          <mat-select name="faultId" [(ngModel)]="model.faultId" required>
+            @for (f of faults(); track f.faultId) {
+              <mat-option [value]="f.faultId">
+                #{{ f.faultId }} · {{ f.siteName }} · {{ f.severity }} — {{ (f.description || '') | slice:0:60 }}
+              </mat-option>
+            } @empty {
+              <mat-option [value]="null" [disabled]="true">No open faults to escalate</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Only faults whose status is not CLOSED are listed.</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Priority</mat-label>
+          <mat-select name="priority" [(ngModel)]="model.priority" required>
+            <mat-option value="P1">P1 — Critical (resolve in 4h)</mat-option>
+            <mat-option value="P2">P2 — High (resolve in 24h)</mat-option>
+            <mat-option value="P3">P3 — Medium (resolve in 24h)</mat-option>
+            <mat-option value="P4">P4 — Low (resolve in 24h)</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Assign to (optional)</mat-label>
+          <mat-select name="assignedToId" [(ngModel)]="model.assignedToId">
+            <mat-option [value]="null">— Leave unassigned —</mat-option>
+            @for (u of assignees(); track u.userId) {
+              <mat-option [value]="u.userId">{{ u.name || u.email }} — {{ u.role }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close type="button">Cancel</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">
+          Open ticket
+        </button>
+      </mat-dialog-actions>
+    </form>
+  `,
+  styles: `
+    h2 { display: flex; align-items: center; gap: 8px; }
+    .col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }
+  `,
+})
+export class NewTicketDialogComponent implements OnInit {
+  private api = inject(ApiService);
+  private snack = inject(MatSnackBar);
+  private ref = inject(MatDialogRef<NewTicketDialogComponent>);
+  private currentUser = inject(CurrentUserService);
+
+  faults = signal<any[]>([]);
+  assignees = signal<any[]>([]);
+  loadingFaults = signal(true);
+  model: any = { faultId: null, priority: 'P3', assignedToId: null };
+
+  ngOnInit() {
+    this.api.faultReports().subscribe({
+      next: (f) => {
+        this.faults.set(f.filter((x) => (x.status || '').toUpperCase() !== 'CLOSED'));
+        this.loadingFaults.set(false);
+      },
+      error: () => this.loadingFaults.set(false),
+    });
+    this.api.users().subscribe({
+      next: (u) => this.assignees.set(
+        u.filter((x) => ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'].includes(x.role))
+      ),
+    });
+  }
+
+  submit() {
+    const me = this.currentUser.userId();
+    if (!me) { this.snack.open('User id not resolved yet', 'OK', { duration: 3000 }); return; }
+    const body: any = { faultId: this.model.faultId, createdById: me, priority: this.model.priority };
+    if (this.model.assignedToId) body.assignedToId = this.model.assignedToId;
+    this.api.createTicket(body).subscribe({
+      next: (created) => this.ref.close(created),
+      error: (err: any) => this.snack.open(err?.error?.message ?? 'Could not open ticket', 'OK', { duration: 4000 }),
+    });
   }
 }
 
