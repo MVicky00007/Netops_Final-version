@@ -250,76 +250,6 @@ export class TicketsListComponent implements OnInit {
     .col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }
   `,
 })
-// ────────────────────────────────────────────────────────────────────────
-// Assign / reassign existing ticket dialog
-// ────────────────────────────────────────────────────────────────────────
-@Component({
-  selector: 'app-assign-ticket-dialog',
-  standalone: true,
-  imports: [
-    CommonModule, FormsModule, MatDialogModule,
-    MatFormFieldModule, MatSelectModule, MatButtonModule, MatIconModule,
-  ],
-  template: `
-    <h2 mat-dialog-title>
-      <mat-icon>person_add</mat-icon>
-      {{ data.ticket.assignedToName ? 'Reassign' : 'Assign' }} ticket #{{ data.ticket.ticketId }}
-    </h2>
-    <form #f="ngForm" (ngSubmit)="submit()">
-      <mat-dialog-content class="col">
-        @if (data.ticket.assignedToName) {
-          <p class="muted">Currently assigned to <strong>{{ data.ticket.assignedToName }}</strong>.</p>
-        }
-        <mat-form-field appearance="outline">
-          <mat-label>Assign to</mat-label>
-          <mat-select name="assignedToId" [(ngModel)]="assignedToId" required>
-            @for (u of assignees(); track u.userId) {
-              <mat-option [value]="u.userId">{{ u.name || u.email }} — {{ u.role }}</mat-option>
-            }
-          </mat-select>
-          <mat-hint>Only engineers (ADMIN / NETWORK_ENGINEER / FIELD_ENGINEER) can be assigned</mat-hint>
-        </mat-form-field>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button mat-dialog-close type="button">Cancel</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">Assign</button>
-      </mat-dialog-actions>
-    </form>
-  `,
-  styles: `
-    h2 { display: flex; align-items: center; gap: 8px; }
-    .col { display: flex; flex-direction: column; gap: 6px; padding-top: 12px !important; }
-    .muted { color: var(--text-muted); font-size: 12px; margin: 0 0 6px; }
-  `,
-})
-export class AssignTicketDialogComponent implements OnInit {
-  private api = inject(ApiService);
-  private snack = inject(MatSnackBar);
-  private ref = inject(MatDialogRef<AssignTicketDialogComponent>);
-
-  assignees = signal<any[]>([]);
-  assignedToId: number | null = null;
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: { ticket: any }) {}
-
-  ngOnInit() {
-    this.api.users().subscribe({
-      next: (u) => this.assignees.set(
-        u.filter((x) => ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'].includes(x.role)
-                     && (x.status || '').toUpperCase() === 'ACTIVE')
-      ),
-    });
-  }
-
-  submit() {
-    if (!this.assignedToId) return;
-    this.api.assignTicket(this.data.ticket.ticketId, this.assignedToId).subscribe({
-      next: () => this.ref.close(true),
-      error: (err: any) => this.snack.open(err?.error?.message ?? 'Assign failed', 'OK', { duration: 4000 }),
-    });
-  }
-}
-
 export class NewTicketDialogComponent implements OnInit {
   private api = inject(ApiService);
   private snack = inject(MatSnackBar);
@@ -420,6 +350,76 @@ export class AttachmentsDialogComponent implements OnInit {
     this.api.ticketAttachments(this.data.ticketId).subscribe({
       next: (a) => { this.attachments.set(a); this.loading.set(false); },
       error: () => { this.attachments.set([]); this.loading.set(false); },
+    });
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Assign / reassign an existing ticket
+// ────────────────────────────────────────────────────────────────────────
+@Component({
+  selector: 'app-assign-ticket-dialog',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, MatDialogModule,
+    MatFormFieldModule, MatSelectModule, MatButtonModule, MatIconModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>
+      <mat-icon>person_add</mat-icon>
+      {{ data.ticket.assignedToName ? 'Reassign' : 'Assign' }} ticket #{{ data.ticket.ticketId }}
+    </h2>
+    <form #f="ngForm" (ngSubmit)="submit()">
+      <mat-dialog-content class="col">
+        @if (data.ticket.assignedToName) {
+          <p class="muted">Currently assigned to <strong>{{ data.ticket.assignedToName }}</strong>.</p>
+        }
+        <mat-form-field appearance="outline">
+          <mat-label>Assign to</mat-label>
+          <mat-select name="assignedToId" [(ngModel)]="assignedToId" required>
+            @for (u of assignees(); track u.userId) {
+              <mat-option [value]="u.userId">{{ u.name || u.email }} — {{ u.role }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Only engineers (ADMIN / NETWORK_ENGINEER / FIELD_ENGINEER) can be assigned</mat-hint>
+        </mat-form-field>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close type="button">Cancel</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">Assign</button>
+      </mat-dialog-actions>
+    </form>
+  `,
+  styles: `
+    h2 { display: flex; align-items: center; gap: 8px; }
+    .col { display: flex; flex-direction: column; gap: 6px; padding-top: 12px !important; }
+    .muted { color: var(--text-muted); font-size: 12px; margin: 0 0 6px; }
+  `,
+})
+export class AssignTicketDialogComponent implements OnInit {
+  private api = inject(ApiService);
+  private snack = inject(MatSnackBar);
+  private ref = inject(MatDialogRef<AssignTicketDialogComponent>);
+
+  assignees = signal<any[]>([]);
+  assignedToId: number | null = null;
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { ticket: any }) {}
+
+  ngOnInit() {
+    this.api.users().subscribe({
+      next: (u) => this.assignees.set(
+        u.filter((x) => ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'].includes(x.role)
+                     && (x.status || '').toUpperCase() === 'ACTIVE')
+      ),
+    });
+  }
+
+  submit() {
+    if (!this.assignedToId) return;
+    this.api.assignTicket(this.data.ticket.ticketId, this.assignedToId).subscribe({
+      next: () => this.ref.close(true),
+      error: (err: any) => this.snack.open(err?.error?.message ?? 'Assign failed', 'OK', { duration: 4000 }),
     });
   }
 }
