@@ -16,7 +16,13 @@ import com.project.netops.service.IncidentTicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,7 +36,16 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
     private final UserRepo userRepository;
     private final SLARecordRepository slaRepository;
     private final TicketAttachmentRepository attachmentRepository;
+    private final TaskRepository taskRepository;
+    private final NotificationRepository notificationRepository;
     private final IncidentTicketMapper mapper;
+
+    /**
+     * Root folder where uploaded ticket attachments live. Resolved relative
+     * to the working directory, which means a fresh clone "just works"
+     * without needing pre-created /var/lib paths.
+     */
+    private static final Path ATTACHMENT_ROOT = Paths.get("uploads", "ticket-attachments");
 
     @Override
     @Transactional
@@ -62,7 +77,48 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
                 .build();
         slaRepository.save(sla);
 
+        // Surface the ticket to the assignee's My-tasks board so the field
+        // engineer (or whoever) doesn't have to discover it manually.
+        if (assignee != null) {
+            createTicketTask(savedTicket, assignee);
+        }
+
         return mapper.toTicketResponse(savedTicket);
+    }
+
+    /**
+     * Build a Task row pointing at the given ticket so it appears in the
+     * assignee's My-tasks list, plus a Notification with category=TICKET.
+     * Idempotent at the call-site: callers should only invoke this when
+     * the assignee actually changes.
+     */
+    private void createTicketTask(IncidentTicket ticket, User assignee) {
+        FaultReport fault = ticket.getFault();
+        String location = (fault != null && fault.getSite() != null)
+                ? fault.getSite().getName()
+                  + (fault.getNode() != null ? " / " + fault.getNode().getHostname() : "")
+                : "—";
+
+        Task task = Task.builder()
+                .user(assignee)
+                .relatedEntityId(ticket.getTicketId())
+                .description("Work on ticket #" + ticket.getTicketId() + " (" + ticket.getPriority()
+                        + ") at " + location
+                        + (fault != null ? ": " + fault.getDescription() : ""))
+                .dueDate(LocalDate.now().plusDays(1))
+                .status(Task.Status.PENDING)
+                .build();
+        taskRepository.save(task);
+
+        Notification notif = Notification.builder()
+                .user(assignee)
+                .entityId(ticket.getTicketId())
+                .message("Ticket #" + ticket.getTicketId() + " (" + ticket.getPriority()
+                        + ") assigned to you — " + location)
+                .category(Notification.Category.TICKET)
+                .status(Notification.Status.UNREAD)
+                .build();
+        notificationRepository.save(notif);
     }
 
     @Override
@@ -121,8 +177,18 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
         User assignee = userRepository.findById(assignedToId.intValue())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + assignedToId));
 
+        // Skip the noise if the ticket is already assigned to this user.
+        boolean changed = ticket.getAssignedTo() == null
+                || !ticket.getAssignedTo().getUserId().equals(assignee.getUserId());
+
         ticket.setAssignedTo(assignee);
-        return mapper.toTicketResponse(ticketRepository.save(ticket));
+        IncidentTicket saved = ticketRepository.save(ticket);
+
+        if (changed) {
+            createTicketTask(saved, assignee);
+        }
+
+        return mapper.toTicketResponse(saved);
     }
 
     @Override
@@ -151,6 +217,73 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
                 .uploadedByName(saved.getUploadedBy().getName())
                 .uploadedAt(saved.getUploadedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    @Auditable(action = "UPLOAD_ATTACHMENT", resourceType = "IncidentTicket")
+    public TicketAttachmentResponse uploadAttachmentFile(Long ticketId, Long uploadedById,
+                                                         String description, MultipartFile file) {
+        IncidentTicket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IncidentNotFoundException("Ticket not found with ID: " + ticketId));
+
+        User uploader = userRepository.findById(uploadedById.intValue())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded file is empty.");
+        }
+
+        try {
+            // Per-ticket subfolder keeps the upload tree tidy.
+            Path ticketDir = ATTACHMENT_ROOT.resolve(String.valueOf(ticketId));
+            Files.createDirectories(ticketDir);
+
+            // Disambiguate filenames with a timestamp so two uploads named
+            // photo.jpg don't overwrite each other.
+            String original = file.getOriginalFilename() == null ? "file" : file.getOriginalFilename();
+            String safeName = original.replaceAll("[^A-Za-z0-9._-]", "_");
+            String stored = System.currentTimeMillis() + "_" + safeName;
+            Path target = ticketDir.resolve(stored);
+            file.transferTo(target.toAbsolutePath().toFile());
+
+            TicketAttachment att = TicketAttachment.builder()
+                    .ticket(ticket)
+                    .fileUri(target.toString().replace('\\', '/'))
+                    .description(description)
+                    .uploadedBy(uploader)
+                    .build();
+            TicketAttachment saved = attachmentRepository.save(att);
+
+            return TicketAttachmentResponse.builder()
+                    .attachmentId(saved.getAttachmentId())
+                    .fileUri(saved.getFileUri())
+                    .description(saved.getDescription())
+                    .uploadedByName(saved.getUploadedBy().getName())
+                    .uploadedAt(saved.getUploadedAt())
+                    .build();
+        } catch (IOException ex) {
+            throw new RuntimeException("Could not save attachment: " + ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.core.io.Resource downloadAttachment(Long attachmentId) {
+        TicketAttachment att = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
+        Path p = Paths.get(att.getFileUri());
+        if (!Files.exists(p)) {
+            throw new ResourceNotFoundException("File missing on disk: " + att.getFileUri());
+        }
+        return new org.springframework.core.io.FileSystemResource(p);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TicketAttachment getAttachment(Long attachmentId) {
+        return attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
     }
 
     @Override

@@ -14,6 +14,10 @@ public interface IncidentTicketService {
     IncidentTicketResponse updateTicketStatus(Long ticketId, String status, String resolutionNotes);
     IncidentTicketResponse assignTicket(Long ticketId, Long assignedToId);
     TicketAttachmentResponse uploadAttachment(Long ticketId, TicketAttachmentRequest request);
+    TicketAttachmentResponse uploadAttachmentFile(Long ticketId, Long uploadedById,
+                                                   String description, org.springframework.web.multipart.MultipartFile file);
+    org.springframework.core.io.Resource downloadAttachment(Long attachmentId);
+    com.project.netops.model.TicketAttachment getAttachment(Long attachmentId);
     List<TicketAttachmentResponse> listAttachments(Long ticketId);
     SLARecordResponse getSlaRecord(Long ticketId);
 }

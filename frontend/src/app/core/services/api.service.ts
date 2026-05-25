@@ -169,6 +169,21 @@ export class ApiService {
   uploadTicketAttachment(ticketId: number, body: any): Observable<any> {
     return this.http.post<ApiResponse<any>>(`${this.base}/api/v1/tickets/${ticketId}/attachments`, body).pipe(map((r) => r.data));
   }
+  /** Multipart file upload — used for image/photo attachments from field engineers. */
+  uploadTicketAttachmentFile(ticketId: number, file: File, uploadedById: number, description?: string): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('uploadedById', String(uploadedById));
+    if (description) form.append('description', description);
+    return this.http
+      .post<ApiResponse<any>>(`${this.base}/api/v1/tickets/${ticketId}/attachments/upload`, form)
+      .pipe(map((r) => r.data));
+  }
+  /** Stream an attachment as a blob (renders inline if it's an image). */
+  downloadTicketAttachment(ticketId: number, attachmentId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/api/v1/tickets/${ticketId}/attachments/${attachmentId}/download`,
+                         { responseType: 'blob' });
+  }
 
   notifications(userId: number): Observable<any[]> {
     return unwrap(this.http.get<ApiResponse<any[]>>(`${this.base}/api/v1/notifications/user/${userId}`));

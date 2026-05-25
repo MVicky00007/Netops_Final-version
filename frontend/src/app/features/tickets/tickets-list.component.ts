@@ -289,26 +289,60 @@ export class NewTicketDialogComponent implements OnInit {
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Ticket attachments viewer dialog
+// Ticket attachments dialog — view + upload images / log dumps.
+// Field engineers use this to attach proof-of-work photos.
 // ────────────────────────────────────────────────────────────────────────
 @Component({
   selector: 'app-attachments-dialog',
   standalone: true,
-  imports: [CommonModule, DatePipe, MatDialogModule, MatIconModule, MatButtonModule, MatProgressBarModule],
+  imports: [
+    CommonModule, DatePipe, FormsModule,
+    MatDialogModule, MatIconModule, MatButtonModule, MatProgressBarModule,
+    MatFormFieldModule, MatInputModule,
+  ],
   template: `
     <h2 mat-dialog-title>
       <mat-icon>attach_file</mat-icon> Attachments for ticket #{{ data.ticketId }}
     </h2>
     <mat-dialog-content>
       @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+      <div class="uploader">
+        <input #fileInput type="file" hidden (change)="onFile($event)"
+               accept="image/*,application/pdf,.log,.txt,.zip">
+        <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="uploading()">
+          <mat-icon>upload_file</mat-icon> Choose file
+        </button>
+        <span class="fname">{{ file?.name || 'No file chosen' }}</span>
+        <mat-form-field appearance="outline" class="notes">
+          <mat-label>Description (optional)</mat-label>
+          <input matInput [(ngModel)]="description" name="description"
+                 placeholder="e.g. Splice closure C-12 after repair">
+        </mat-form-field>
+        <button mat-flat-button color="primary" (click)="upload()"
+                [disabled]="!file || uploading()">
+          <mat-icon>cloud_upload</mat-icon> Upload
+        </button>
+      </div>
+
       @if (attachments().length) {
         <table class="dt">
-          <thead><tr><th>ID</th><th>File</th><th>Description</th><th>Uploaded by</th><th>When</th></tr></thead>
+          <thead>
+            <tr><th>ID</th><th>Preview / File</th><th>Description</th><th>Uploaded by</th><th>When</th></tr>
+          </thead>
           <tbody>
             @for (a of attachments(); track a.attachmentId) {
               <tr>
                 <td class="num">{{ a.attachmentId }}</td>
-                <td><a [href]="a.fileUri" target="_blank">{{ a.fileUri }}</a></td>
+                <td>
+                  @if (a.previewUrl && isImage(a.fileUri)) {
+                    <img [src]="a.previewUrl" class="thumb" alt="attachment" />
+                  } @else {
+                    <button mat-stroked-button color="primary" (click)="download(a)">
+                      <mat-icon>download</mat-icon> {{ basename(a.fileUri) }}
+                    </button>
+                  }
+                </td>
                 <td>{{ a.description || '—' }}</td>
                 <td>{{ a.uploadedByName || '—' }}</td>
                 <td class="muted">{{ a.uploadedAt | date:'short' }}</td>
@@ -319,7 +353,7 @@ export class NewTicketDialogComponent implements OnInit {
       } @else if (!loading()) {
         <div class="empty">
           <mat-icon>cloud_off</mat-icon>
-          <p>No attachments uploaded to this ticket.</p>
+          <p>No attachments uploaded to this ticket yet.</p>
         </div>
       }
     </mat-dialog-content>
@@ -329,28 +363,112 @@ export class NewTicketDialogComponent implements OnInit {
   `,
   styles: `
     h2 { display: flex; align-items: center; gap: 8px; }
+    .uploader { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+                margin: 8px 0 16px; padding: 12px; background: #f8fafc;
+                border: 1px solid var(--border-soft); border-radius: 6px; }
+    .uploader .notes { flex: 1 1 200px; min-width: 220px; }
+    .fname { font-size: 12px; color: var(--text-muted); }
     .dt { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
-    .dt th, .dt td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+    .dt th, .dt td { padding: 8px 10px; text-align: left;
+                     border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
     .dt th { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
              letter-spacing: 0.04em; background: #fafbfc; }
     .num { font-variant-numeric: tabular-nums; font-weight: 500; }
     .muted { color: var(--text-muted); }
     .empty { text-align: center; padding: 32px; color: var(--text-faint); }
     .empty mat-icon { font-size: 36px !important; height: 36px !important; width: 36px !important; }
+    .thumb { width: 96px; height: 64px; object-fit: cover; border-radius: 4px;
+             border: 1px solid var(--border-soft); }
   `,
 })
 export class AttachmentsDialogComponent implements OnInit {
   private api = inject(ApiService);
+  private snack = inject(MatSnackBar);
+  private currentUser = inject(CurrentUserService);
+
   loading = signal(true);
+  uploading = signal(false);
   attachments = signal<any[]>([]);
+  file: File | null = null;
+  description = '';
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: { ticketId: number }) {}
 
   ngOnInit() {
+    this.currentUser.resolveId().subscribe();
+    this.refresh();
+  }
+
+  refresh() {
+    this.loading.set(true);
     this.api.ticketAttachments(this.data.ticketId).subscribe({
-      next: (a) => { this.attachments.set(a); this.loading.set(false); },
+      next: (a) => {
+        const enriched = a.map((row) => ({ ...row }));
+        // Pull image bytes so we can render an <img> thumbnail inline.
+        enriched.forEach((row) => {
+          if (this.isImage(row.fileUri)) {
+            this.api.downloadTicketAttachment(this.data.ticketId, row.attachmentId).subscribe({
+              next: (blob) => {
+                row.previewUrl = window.URL.createObjectURL(blob);
+                this.attachments.set([...enriched]);
+              },
+              error: () => { /* fall back to a download button */ },
+            });
+          }
+        });
+        this.attachments.set(enriched);
+        this.loading.set(false);
+      },
       error: () => { this.attachments.set([]); this.loading.set(false); },
     });
+  }
+
+  onFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.file = input.files?.[0] ?? null;
+  }
+
+  upload() {
+    if (!this.file) return;
+    const me = this.currentUser.userId();
+    if (!me) { this.snack.open('User id not resolved yet', 'OK', { duration: 3000 }); return; }
+    this.uploading.set(true);
+    this.api.uploadTicketAttachmentFile(this.data.ticketId, this.file, me, this.description || undefined).subscribe({
+      next: () => {
+        this.uploading.set(false);
+        this.file = null; this.description = '';
+        this.snack.open('Attachment uploaded', 'OK', { duration: 2500 });
+        this.refresh();
+      },
+      error: (err: any) => {
+        this.uploading.set(false);
+        this.snack.open(err?.error?.message ?? 'Upload failed', 'OK', { duration: 4000 });
+      },
+    });
+  }
+
+  download(a: any) {
+    this.api.downloadTicketAttachment(this.data.ticketId, a.attachmentId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = this.basename(a.fileUri);
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err: any) => this.snack.open(err?.error?.message ?? 'Download failed', 'OK', { duration: 3000 }),
+    });
+  }
+
+  isImage(uri: string): boolean {
+    return /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(uri || '');
+  }
+
+  basename(uri: string): string {
+    if (!uri) return '—';
+    const parts = uri.split(/[\\/]/);
+    return parts[parts.length - 1];
   }
 }
 
