@@ -156,11 +156,9 @@ export class InterfacesListComponent implements OnInit {
         <mat-form-field appearance="outline">
           <mat-label>Type</mat-label>
           <mat-select name="type" [(ngModel)]="model.type">
-            <mat-option value="ETHERNET">ETHERNET</mat-option>
             <mat-option value="FIBER">FIBER</mat-option>
-            <mat-option value="LAG">LAG</mat-option>
-            <mat-option value="VLAN">VLAN</mat-option>
-            <mat-option value="OTHER">OTHER</mat-option>
+            <mat-option value="COPPER">COPPER</mat-option>
+            <mat-option value="WIRELESS">WIRELESS</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline">
@@ -176,7 +174,6 @@ export class InterfacesListComponent implements OnInit {
           <mat-select name="adminStatus" [(ngModel)]="model.adminStatus">
             <mat-option value="UP">UP</mat-option>
             <mat-option value="DOWN">DOWN</mat-option>
-            <mat-option value="TESTING">TESTING</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline">
@@ -185,6 +182,7 @@ export class InterfacesListComponent implements OnInit {
             <mat-option value="UP">UP</mat-option>
             <mat-option value="DOWN">DOWN</mat-option>
             <mat-option value="TESTING">TESTING</mat-option>
+            <mat-option value="UNKNOWN">UNKNOWN</mat-option>
           </mat-select>
         </mat-form-field>
       </mat-dialog-content>
@@ -215,7 +213,7 @@ export class InterfaceFormDialog implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: { iface: any | null }) {
     this.model = data.iface
       ? { ...data.iface }
-      : { name: '', type: 'ETHERNET', capacityMbps: 1000, ipAddress: '', adminStatus: 'UP', operStatus: 'UP' };
+      : { name: '', type: 'FIBER', capacityMbps: 1000, ipAddress: '', adminStatus: 'UP', operStatus: 'UP' };
   }
 
   ngOnInit() {

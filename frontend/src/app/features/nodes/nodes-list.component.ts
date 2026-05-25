@@ -150,9 +150,10 @@ export class NodesListComponent implements OnInit {
         <mat-form-field appearance="outline">
           <mat-label>Status</mat-label>
           <mat-select name="status" [(ngModel)]="model.status" required>
-            <mat-option value="ACTIVE">ACTIVE</mat-option>
+            <mat-option value="ONLINE">ONLINE</mat-option>
+            <mat-option value="OFFLINE">OFFLINE</mat-option>
+            <mat-option value="DEGRADED">DEGRADED</mat-option>
             <mat-option value="MAINTENANCE">MAINTENANCE</mat-option>
-            <mat-option value="INACTIVE">INACTIVE</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline">
@@ -197,7 +198,7 @@ export class NodeFormDialog implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: { node: any | null }) {
     this.model = data.node
       ? { ...data.node, installedAt: data.node.installedAt?.substring(0, 10) }
-      : { hostname: '', model: '', serialNumber: '', managementIp: '', status: 'ACTIVE', installedAt: '' };
+      : { hostname: '', model: '', serialNumber: '', managementIp: '', status: 'ONLINE', installedAt: '' };
   }
 
   ngOnInit() {
