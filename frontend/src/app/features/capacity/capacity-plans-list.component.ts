@@ -59,15 +59,21 @@ import { CurrentUserService } from '../../core/services/current-user.service';
                 <td>{{ p.requestedByName || '—' }}</td>
                 <td><span class="pill" [class]="'pill-' + (p.status || '').toLowerCase()">{{ p.status }}</span></td>
                 <td class="muted">{{ p.requestedAt | date:'short' }}</td>
-                <td>
+                <td class="actions-cell">
                   <button mat-icon-button (click)="openEvidence(p)" matTooltip="Evidence files">
                     <mat-icon>folder_open</mat-icon>
                   </button>
                   @if (auth.hasRole('ADMIN','MANAGER') && p.status === 'PENDING') {
-                    <button mat-icon-button color="primary" (click)="decide(p.planId, 'APPROVED')"
-                            matTooltip="Approve"><mat-icon>check_circle</mat-icon></button>
-                    <button mat-icon-button color="warn" (click)="decide(p.planId, 'REJECTED')"
-                            matTooltip="Reject"><mat-icon>cancel</mat-icon></button>
+                    <button mat-stroked-button color="primary" class="act act-approve"
+                            (click)="openDecision(p, 'APPROVED')">
+                      <mat-icon>check_circle</mat-icon> Approve
+                    </button>
+                    <button mat-stroked-button color="warn" class="act act-reject"
+                            (click)="openDecision(p, 'REJECTED')">
+                      <mat-icon>cancel</mat-icon> Reject
+                    </button>
+                  } @else if (p.status !== 'PENDING') {
+                    <span class="faint">no action</span>
                   }
                 </td>
               </tr>
@@ -104,6 +110,11 @@ import { CurrentUserService } from '../../core/services/current-user.service';
     .pill-pending, .pill-draft { background: var(--warn-bg); color: var(--warn-fg); }
     .pill-rejected  { background: var(--danger-bg); color: var(--danger-fg); }
     .pill-implemented { background: var(--info-bg); color: var(--info-fg); }
+
+    .actions-cell { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .act { line-height: 28px; min-height: 32px; padding: 0 10px; font-size: 12px; }
+    .act mat-icon { font-size: 16px !important; height: 16px !important; width: 16px !important;
+                    margin-right: 2px; vertical-align: middle; }
   `,
 })
 export class CapacityPlansListComponent implements OnInit {
@@ -146,14 +157,122 @@ export class CapacityPlansListComponent implements OnInit {
     this.dialog.open(PlanEvidenceDialog, { width: '640px', data: { plan } });
   }
 
-  decide(planId: number, status: 'APPROVED' | 'REJECTED') {
+  /**
+   * Open the review dialog for the given plan. The dialog asks the manager
+   * for comments (mandatory on REJECT, optional on APPROVE) and then submits
+   * to POST /capacity-plans/{id}/approve with the chosen status.
+   */
+  openDecision(plan: any, decision: 'APPROVED' | 'REJECTED') {
     const approverId = this.currentUser.userId();
-    if (!approverId) { this.snack.open('Could not resolve your user id', 'OK', { duration: 3000 }); return; }
-    this.api.approveCapacityPlan(planId, {
-      approvedBy: approverId, status, comments: status === 'APPROVED' ? 'Approved.' : 'Rejected.',
+    if (!approverId) {
+      this.snack.open('Could not resolve your user id', 'OK', { duration: 3000 });
+      return;
+    }
+    const ref = this.dialog.open(ReviewPlanDialog, {
+      width: '500px',
+      data: { plan, decision, approverId },
+    });
+    ref.afterClosed().subscribe((done) => {
+      if (done) {
+        this.snack.open(
+          `Plan #${plan.planId} ${decision === 'APPROVED' ? 'approved' : 'rejected'}`,
+          'OK', { duration: 2500 });
+        this.refresh();
+      }
+    });
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Approve / Reject capacity plan dialog (manager workflow)
+// ────────────────────────────────────────────────────────────────────────
+@Component({
+  selector: 'app-review-plan-dialog',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule,
+    MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule,
+  ],
+  template: `
+    <h2 mat-dialog-title [class.approve]="data.decision === 'APPROVED'"
+                         [class.reject]="data.decision === 'REJECTED'">
+      <mat-icon>{{ data.decision === 'APPROVED' ? 'check_circle' : 'cancel' }}</mat-icon>
+      {{ data.decision === 'APPROVED' ? 'Approve' : 'Reject' }} plan #{{ data.plan.planId }}
+    </h2>
+    <form #f="ngForm" (ngSubmit)="submit()">
+      <mat-dialog-content class="col">
+        <div class="summary">
+          <div><span class="lbl">Site</span><strong>{{ data.plan.siteName || '—' }}</strong></div>
+          <div><span class="lbl">Current</span>{{ data.plan.currentCapacity }} Mbps</div>
+          <div><span class="lbl">Proposed</span>{{ data.plan.proposedCapacity }} Mbps</div>
+          <div><span class="lbl">Requested by</span>{{ data.plan.requestedByName || '—' }}</div>
+          <div class="full"><span class="lbl">Reason</span>{{ data.plan.reason }}</div>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ data.decision === 'APPROVED' ? 'Approval comments (optional)' : 'Reason for rejection' }}</mat-label>
+          <textarea matInput rows="3" name="comments" [(ngModel)]="comments"
+                    [required]="data.decision === 'REJECTED'"
+                    [placeholder]="data.decision === 'APPROVED'
+                      ? 'e.g. Traffic data justifies upgrade. Proceed with vendor scheduling.'
+                      : 'e.g. Insufficient evidence. Re-submit with MRTG dump for last quarter.'"></textarea>
+          <mat-hint>{{ data.decision === 'REJECTED'
+                       ? 'A clear reason helps the requester address the gap.'
+                       : 'Optional — leave blank for a straight approval.' }}</mat-hint>
+        </mat-form-field>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close type="button">Cancel</button>
+        <button mat-flat-button type="submit"
+                [color]="data.decision === 'APPROVED' ? 'primary' : 'warn'"
+                [disabled]="!f.form.valid || submitting()">
+          <mat-icon>{{ data.decision === 'APPROVED' ? 'check_circle' : 'cancel' }}</mat-icon>
+          Confirm {{ data.decision === 'APPROVED' ? 'approval' : 'rejection' }}
+        </button>
+      </mat-dialog-actions>
+    </form>
+  `,
+  styles: `
+    h2 { display: flex; align-items: center; gap: 8px; }
+    h2.approve mat-icon { color: var(--success-fg) !important; }
+    h2.reject  mat-icon { color: var(--danger-fg) !important; }
+    .col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }
+    .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+               padding: 12px 14px; background: #f8fafc; border-radius: 6px;
+               border: 1px solid var(--border-soft); margin-bottom: 12px; font-size: 12.5px; }
+    .summary .full { grid-column: span 2; }
+    .summary .lbl { display: block; font-size: 10.5px; font-weight: 600;
+                    text-transform: uppercase; letter-spacing: 0.04em;
+                    color: var(--text-muted); margin-bottom: 2px; }
+  `,
+})
+export class ReviewPlanDialog {
+  private api = inject(ApiService);
+  private snack = inject(MatSnackBar);
+  private ref = inject(MatDialogRef<ReviewPlanDialog>);
+
+  comments = '';
+  submitting = signal(false);
+
+  constructor(@Inject(MAT_DIALOG_DATA) public data: {
+    plan: any;
+    decision: 'APPROVED' | 'REJECTED';
+    approverId: number;
+  }) {}
+
+  submit() {
+    this.submitting.set(true);
+    this.api.approveCapacityPlan(this.data.plan.planId, {
+      approvedBy: this.data.approverId,
+      status:     this.data.decision,
+      comments:   this.comments.trim() ||
+                  (this.data.decision === 'APPROVED' ? 'Approved.' : 'Rejected.'),
     }).subscribe({
-      next: () => { this.snack.open(`Plan ${status.toLowerCase()}`, 'OK', { duration: 2500 }); this.refresh(); },
-      error: (err: any) => this.snack.open(err?.error?.message ?? `Action failed`, 'OK', { duration: 4000 }),
+      next: () => { this.submitting.set(false); this.ref.close(true); },
+      error: (err: any) => {
+        this.submitting.set(false);
+        this.snack.open(err?.error?.message ?? 'Decision failed', 'OK', { duration: 4000 });
+      },
     });
   }
 }
