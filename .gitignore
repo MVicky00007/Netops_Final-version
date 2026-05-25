@@ -54,3 +54,5 @@ frontend/yarn-error.log*
 frontend/.env
 frontend/.env.local
 frontend/*.tsbuildinfo
+
+.gitmsg.tmp
