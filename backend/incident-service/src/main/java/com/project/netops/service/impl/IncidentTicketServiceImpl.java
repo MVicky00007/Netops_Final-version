@@ -53,11 +53,40 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
     public IncidentTicketResponse createTicket(IncidentTicketRequest request) {
         FaultReport fault = faultRepository.findById(request.getFaultId())
                 .orElseThrow(() -> new ResourceNotFoundException("Fault not found"));
+
+        // Business rule: a fault may have only ONE active ticket at a time. If
+        // someone tries to open a second one while the first is still open / in
+        // progress / pending, reject the request -- the workflow is: resolve
+        // the existing ticket first, then (if needed) open a new one.
+        boolean alreadyActive = ticketRepository.findByFault_FaultId(fault.getFaultId()).stream()
+                .anyMatch(t -> t.getStatus() != IncidentTicket.Status.RESOLVED
+                            && t.getStatus() != IncidentTicket.Status.CLOSED);
+        if (alreadyActive) {
+            throw new InvalidTicketStateException(
+                    "Fault #" + fault.getFaultId() + " already has an active ticket. "
+                  + "Resolve it before opening a new one.");
+        }
+
         User creator = userRepository.findById(request.getCreatedById().intValue())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        User assignee = request.getAssignedToId() != null ?
-            userRepository.findById(request.getAssignedToId().intValue()).orElse(null) : null;
+        // Business rule: tickets are field work, so only FIELD_ENGINEER users
+        // can be the assignee. Anything else is a workflow mistake.
+        User assignee = null;
+        if (request.getAssignedToId() != null) {
+            assignee = userRepository.findById(request.getAssignedToId().intValue())
+                    .orElseThrow(() -> new ResourceNotFoundException("Assignee not found"));
+            if (assignee.getRole() != User.Role.FIELD_ENGINEER) {
+                throw new InvalidTicketStateException(
+                        "Tickets can only be assigned to a FIELD_ENGINEER. "
+                      + assignee.getName() + " is " + assignee.getRole() + ".");
+            }
+            if (assignee.getStatus() != User.Status.ACTIVE) {
+                throw new InvalidTicketStateException(
+                        "Cannot assign ticket to " + assignee.getName()
+                      + " — account is " + assignee.getStatus() + ".");
+            }
+        }
 
         IncidentTicket ticket = IncidentTicket.builder()
                 .fault(fault)
@@ -77,13 +106,39 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
                 .build();
         slaRepository.save(sla);
 
-        // Surface the ticket to the assignee's My-tasks board so the field
-        // engineer (or whoever) doesn't have to discover it manually.
+        // The triage tasks for this fault have served their purpose -- a
+        // ticket now exists. Auto-close them so the other network engineers'
+        // dashboards stay clean.
+        completeTriageTasksFor(fault.getFaultId());
+
+        // Move the fault from OPEN to IN_PROGRESS now that work is starting.
+        if (fault.getStatus() == FaultReport.Status.OPEN) {
+            fault.setStatus(FaultReport.Status.IN_PROGRESS);
+            faultRepository.save(fault);
+        }
+
         if (assignee != null) {
             createTicketTask(savedTicket, assignee);
         }
 
         return mapper.toTicketResponse(savedTicket);
+    }
+
+    /**
+     * Mark every PENDING / IN_PROGRESS "Triage fault #N..." task as COMPLETED
+     * once a ticket exists for that fault — the triage decision has been made.
+     */
+    private void completeTriageTasksFor(Long faultId) {
+        String tag = "Triage fault #" + faultId;
+        taskRepository.findAll().stream()
+                .filter(t -> t.getRelatedEntityId() != null && t.getRelatedEntityId().equals(faultId))
+                .filter(t -> t.getDescription() != null && t.getDescription().startsWith(tag))
+                .filter(t -> t.getStatus() == Task.Status.PENDING
+                          || t.getStatus() == Task.Status.IN_PROGRESS)
+                .forEach(t -> {
+                    t.setStatus(Task.Status.COMPLETED);
+                    taskRepository.save(t);
+                });
     }
 
     /**
@@ -176,6 +231,19 @@ public class IncidentTicketServiceImpl implements IncidentTicketService {
 
         User assignee = userRepository.findById(assignedToId.intValue())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + assignedToId));
+
+        // Same business rule as createTicket — only FIELD_ENGINEER can be the
+        // assignee for incident work.
+        if (assignee.getRole() != User.Role.FIELD_ENGINEER) {
+            throw new InvalidTicketStateException(
+                    "Tickets can only be assigned to a FIELD_ENGINEER. "
+                  + assignee.getName() + " is " + assignee.getRole() + ".");
+        }
+        if (assignee.getStatus() != User.Status.ACTIVE) {
+            throw new InvalidTicketStateException(
+                    "Cannot assign ticket to " + assignee.getName()
+                  + " — account is " + assignee.getStatus() + ".");
+        }
 
         // Skip the noise if the ticket is already assigned to this user.
         boolean changed = ticket.getAssignedTo() == null

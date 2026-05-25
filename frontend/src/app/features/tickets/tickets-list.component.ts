@@ -264,14 +264,22 @@ export class NewTicketDialogComponent implements OnInit {
   ngOnInit() {
     this.api.faultReports().subscribe({
       next: (f) => {
-        this.faults.set(f.filter((x) => (x.status || '').toUpperCase() !== 'CLOSED'));
+        // Only OPEN / IN_PROGRESS faults are eligible for a NEW ticket.
+        // (CLOSED/RESOLVED faults won't need new work; faults that already
+        // have an active ticket would be rejected by the backend, but the
+        // UI doesn't pre-filter those — the error is clear if it happens.)
+        this.faults.set(f.filter((x) => {
+          const s = (x.status || '').toUpperCase();
+          return s !== 'CLOSED' && s !== 'RESOLVED';
+        }));
         this.loadingFaults.set(false);
       },
       error: () => this.loadingFaults.set(false),
     });
+    // Tickets are field work -> only field engineers can be assignees.
     this.api.users().subscribe({
       next: (u) => this.assignees.set(
-        u.filter((x) => ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'].includes(x.role))
+        u.filter((x) => x.role === 'FIELD_ENGINEER' && (x.status || '').toUpperCase() === 'ACTIVE')
       ),
     });
   }
@@ -499,7 +507,7 @@ export class AttachmentsDialogComponent implements OnInit {
               <mat-option [value]="u.userId">{{ u.name || u.email }} — {{ u.role }}</mat-option>
             }
           </mat-select>
-          <mat-hint>Only engineers (ADMIN / NETWORK_ENGINEER / FIELD_ENGINEER) can be assigned</mat-hint>
+          <mat-hint>Tickets can only be assigned to a field engineer</mat-hint>
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
@@ -525,10 +533,10 @@ export class AssignTicketDialogComponent implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: { ticket: any }) {}
 
   ngOnInit() {
+    // Only ACTIVE field engineers can hold a ticket.
     this.api.users().subscribe({
       next: (u) => this.assignees.set(
-        u.filter((x) => ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'].includes(x.role)
-                     && (x.status || '').toUpperCase() === 'ACTIVE')
+        u.filter((x) => x.role === 'FIELD_ENGINEER' && (x.status || '').toUpperCase() === 'ACTIVE')
       ),
     });
   }

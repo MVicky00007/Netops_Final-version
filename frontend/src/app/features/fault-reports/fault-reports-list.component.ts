@@ -401,10 +401,10 @@ export class EscalateToTicketDialog implements OnInit {
   }
 
   ngOnInit() {
-    // Only show users who can actually work on incidents.
+    // Tickets are field work — only ACTIVE field engineers can be assignees.
     this.api.users().subscribe({
       next: (u) => this.assignees.set(
-        u.filter((x) => ['ADMIN', 'NETWORK_ENGINEER', 'FIELD_ENGINEER'].includes(x.role))
+        u.filter((x) => x.role === 'FIELD_ENGINEER' && (x.status || '').toUpperCase() === 'ACTIVE')
       ),
     });
   }
