@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { ApiService } from '../../core/services/api.service';
@@ -18,7 +19,7 @@ import { CurrentUserService } from '../../core/services/current-user.service';
   selector: 'app-capacity-records-list',
   standalone: true,
   imports: [CommonModule, DatePipe, FormsModule,
-            MatButtonModule, MatIconModule, MatDialogModule, MatProgressBarModule],
+            MatButtonModule, MatIconModule, MatDialogModule, MatProgressBarModule, MatTooltipModule],
   template: `
     <div class="page">
       <div class="hdr">
@@ -35,17 +36,59 @@ import { CurrentUserService } from '../../core/services/current-user.service';
 
       <div class="panel">
         @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+        <div class="scroll">
         <table class="dt">
+          <colgroup>
+            <col style="width: 56px" />     <!-- ID -->
+            <col style="width: 200px" />    <!-- Site -->
+            <col style="width: 160px" />    <!-- Interface -->
+            <col style="width: 260px" />    <!-- Utilisation -->
+            <col style="width: 150px" />    <!-- Recorded by -->
+            <col style="width: 140px" />    <!-- Measured at -->
+          </colgroup>
           <thead>
-            <tr><th>ID</th><th>Site</th><th>Interface</th><th>Measured (Mbps)</th><th>Recorded by</th><th>Measured at</th></tr>
+            <tr>
+              <th>ID</th>
+              <th>Site</th>
+              <th>Interface</th>
+              <th>Utilisation</th>
+              <th>Recorded by</th>
+              <th>Measured at</th>
+            </tr>
           </thead>
           <tbody>
             @for (r of rows(); track r.capacityId) {
               <tr>
-                <td>{{ r.capacityId }}</td>
-                <td>{{ r.siteName || '—' }}</td>
-                <td>{{ r.interfaceName || '—' }}</td>
-                <td class="num">{{ r.measuredCapacityMbps }}</td>
+                <td class="num">{{ r.capacityId }}</td>
+                <td>
+                  @if (r.siteCode || r.siteName) {
+                    <div class="site-name">{{ r.siteCode || '—' }}</div>
+                    <div class="site-sub">{{ r.siteName }}</div>
+                  } @else { <span class="faint">—</span> }
+                </td>
+                <td>
+                  <div class="iface-name">{{ r.interfaceName || '—' }}</div>
+                  @if (r.interfaceCapacityMbps) {
+                    <div class="iface-cap">rated {{ r.interfaceCapacityMbps | number }} Mbps</div>
+                  }
+                </td>
+                <td>
+                  <div class="util-row">
+                    <div class="util-bar">
+                      <div class="util-fill"
+                           [class.util-good]="utilPct(r) < 70"
+                           [class.util-warn]="utilPct(r) >= 70 && utilPct(r) < 90"
+                           [class.util-hot]="utilPct(r) >= 90"
+                           [style.width.%]="Math.min(utilPct(r), 100)"></div>
+                    </div>
+                    <div class="util-meta">
+                      <span class="util-val">{{ r.measuredCapacityMbps | number }}</span>
+                      @if (r.interfaceCapacityMbps) {
+                        <span class="util-pct">{{ utilPct(r).toFixed(0) }}%</span>
+                      }
+                    </div>
+                  </div>
+                </td>
                 <td>{{ r.recordedByName || '—' }}</td>
                 <td class="muted">{{ r.measuredAt | date:'short' }}</td>
               </tr>
@@ -54,6 +97,7 @@ import { CurrentUserService } from '../../core/services/current-user.service';
             }
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   `,
@@ -63,14 +107,38 @@ import { CurrentUserService } from '../../core/services/current-user.service';
     .hdr h1 { font-size: 20px; font-weight: 600; margin: 0; }
     .hdr p { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
     .muted { color: var(--text-muted); }
+    .faint { color: var(--text-faint); font-style: italic; }
+
     .panel { background: #fff; border: 1px solid var(--border-soft); border-radius: 8px; overflow: hidden; }
-    .dt { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-    .dt th, .dt td { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border-soft); }
-    .dt th { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
-             color: var(--text-muted); background: #fafbfc; }
+    .scroll { overflow-x: auto; }
+    .dt { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+    .dt th, .dt td { padding: 10px 14px; text-align: left;
+                     border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+    .dt th { font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+             letter-spacing: 0.04em; color: var(--text-muted); background: #fafbfc; }
     .dt tbody tr:hover { background: rgba(15,23,42,.02); }
     .num { font-variant-numeric: tabular-nums; font-weight: 500; }
     .empty { text-align: center; padding: 32px; color: var(--text-faint); }
+
+    .site-name { font-weight: 600; font-size: 12.5px; line-height: 1.2; }
+    .site-sub  { font-size: 10.5px; color: var(--text-muted); margin-top: 2px;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .iface-name { font-weight: 500; font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", monospace;
+                  font-size: 12px; }
+    .iface-cap  { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+
+    .util-row { display: flex; flex-direction: column; gap: 4px; }
+    .util-bar { width: 100%; height: 6px; background: #eef2f6; border-radius: 999px;
+                overflow: hidden; }
+    .util-fill { height: 100%; border-radius: 999px; transition: width .25s ease; }
+    .util-good { background: #16a34a; }
+    .util-warn { background: #d97706; }
+    .util-hot  { background: #dc2626; }
+    .util-meta { display: flex; justify-content: space-between; align-items: center;
+                 font-size: 11px; color: var(--text-muted); }
+    .util-val { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); }
+    .util-pct { font-variant-numeric: tabular-nums; font-weight: 700; }
   `,
 })
 export class CapacityRecordsListComponent implements OnInit {
@@ -80,8 +148,17 @@ export class CapacityRecordsListComponent implements OnInit {
   private currentUser = inject(CurrentUserService);
   private snack = inject(MatSnackBar);
 
+  // Exposed so the template can use Math.min(...) directly in property bindings.
+  protected Math = Math;
+
   rows = signal<any[]>([]);
   loading = signal(true);
+
+  /** Measured throughput as a percentage of the interface's rated capacity. */
+  utilPct(r: any): number {
+    if (!r?.interfaceCapacityMbps || r.interfaceCapacityMbps <= 0) return 0;
+    return (r.measuredCapacityMbps / r.interfaceCapacityMbps) * 100;
+  }
 
   ngOnInit() {
     this.currentUser.resolveId().subscribe();
