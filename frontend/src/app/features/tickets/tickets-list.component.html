@@ -1,0 +1,80 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>Incident tickets</h1>
+      <p class="muted">Open and resolved incidents with SLA tracking</p>
+    </div>
+    @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER')) {
+      <button mat-flat-button color="primary" (click)="openCreate()">
+        <mat-icon>add</mat-icon> New ticket
+      </button>
+    }
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <div class="scroll">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>ID</th><th>Fault</th><th>Priority</th><th>Created by</th>
+          <th>Assigned to</th><th>Status</th><th>Created</th><th>Resolved</th>
+          <th>SLA response by</th><th>SLA resolve by</th><th>SLA</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of rows(); track t.ticketId) {
+          <tr>
+            <td class="num">{{ t.ticketId }}</td>
+            <td class="num">{{ t.faultId }}</td>
+            <td><span class="pri" [class]="'pri-' + (t.priority || '').toLowerCase()">{{ t.priority }}</span></td>
+            <td>{{ t.createdByName || '—' }}</td>
+            <td>{{ t.assignedToName || '—' }}</td>
+            <td><span class="pill" [class]="'pill-' + (t.status || '').toLowerCase()">{{ t.status }}</span></td>
+            <td class="muted">{{ t.createdAt | date:'short' }}</td>
+            <td class="muted">{{ t.resolvedAt ? (t.resolvedAt | date:'short') : '—' }}</td>
+            <td class="muted">{{ t.slaResponseDueAt ? (t.slaResponseDueAt | date:'short') : '—' }}</td>
+            <td class="muted">{{ t.slaResolutionDueAt ? (t.slaResolutionDueAt | date:'short') : '—' }}</td>
+            <td>
+              @if (t.slaId != null) {
+                @if (t.slaBreached) {
+                  <span class="sla-pill breached">BREACHED</span>
+                } @else {
+                  <span class="sla-pill within">WITHIN</span>
+                }
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+            <td>
+              <button mat-icon-button [matMenuTriggerFor]="m" matTooltip="Actions">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #m="matMenu">
+                <button mat-menu-item (click)="viewAttachments(t.ticketId)">
+                  <mat-icon>attach_file</mat-icon>View attachments
+                </button>
+                @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER') && t.status !== 'CLOSED') {
+                  <button mat-menu-item (click)="openAssign(t)">
+                    <mat-icon>person_add</mat-icon>{{ t.assignedToName ? 'Reassign' : 'Assign' }}
+                  </button>
+                }
+                @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER','MANAGER') && t.status !== 'CLOSED') {
+                  <mat-divider />
+                  <button mat-menu-item (click)="updateStatus(t.ticketId, 'IN_PROGRESS')"><mat-icon>play_arrow</mat-icon>In progress</button>
+                  <button mat-menu-item (click)="updateStatus(t.ticketId, 'PENDING')"><mat-icon>hourglass_top</mat-icon>Pending</button>
+                  <button mat-menu-item (click)="updateStatus(t.ticketId, 'RESOLVED')"><mat-icon>check_circle</mat-icon>Resolved</button>
+                  <button mat-menu-item (click)="updateStatus(t.ticketId, 'CLOSED')"><mat-icon>archive</mat-icon>Close</button>
+                }
+              </mat-menu>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="12" class="empty">No tickets yet.</td></tr>
+        }
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>

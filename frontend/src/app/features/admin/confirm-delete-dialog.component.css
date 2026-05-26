@@ -1,0 +1,5 @@
+h2 { display: flex; align-items: center; gap: 8px; }
+.warn { color: var(--danger-fg) !important; }
+ul { margin: 6px 0 12px 18px; padding: 0; font-size: 13px; }
+li { margin-bottom: 2px; }
+.warn-text { font-size: 12px; color: var(--danger-fg); }

@@ -51,6 +51,16 @@ export class AuthService {
     return this.http.post(`${environment.apiUrl}/forgot-password`, body, { responseType: 'text' });
   }
 
+  /**
+   * Update the profile of the user identified by `email`. The backend takes
+   * the email as a query param and the new field values in the body.
+   * Returns the raw text response from the server.
+   */
+  updateProfile(email: string, body: Partial<UserRequest>): Observable<string> {
+    const url = `${environment.apiUrl}/update-profile?email=${encodeURIComponent(email)}`;
+    return this.http.put(url, body, { responseType: 'text' });
+  }
+
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     this.token.set(null);

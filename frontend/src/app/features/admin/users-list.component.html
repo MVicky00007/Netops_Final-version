@@ -1,0 +1,65 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>All users</h1>
+      <p class="muted">Everyone with an account on NetOpsOne — admin can change role / block / unblock / delete</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>ID</th><th>Name</th><th>Email</th><th>Phone</th>
+          <th>Role</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of rows(); track u.userId) {
+          <tr [class.self]="u.email === auth.email()">
+            <td class="num">{{ u.userId }}</td>
+            <td><strong>{{ u.name || '—' }}</strong>
+              @if (u.email === auth.email()) { <span class="self-pill">you</span> }
+            </td>
+            <td>{{ u.email }}</td>
+            <td class="muted">{{ u.phone || '—' }}</td>
+            <td><span class="role-pill" [class]="'role-' + (u.role || '').toLowerCase()">{{ u.role }}</span></td>
+            <td><span class="pill" [class]="'pill-' + (u.status || '').toLowerCase()">{{ u.status }}</span></td>
+            <td>
+              <button mat-icon-button [matMenuTriggerFor]="m"
+                      [disabled]="u.email === auth.email()"
+                      [matTooltip]="u.email === auth.email() ? 'You cannot edit your own account here' : 'Actions'">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #m="matMenu">
+                <button mat-menu-item (click)="changeRole(u)">
+                  <mat-icon>badge</mat-icon>Change role
+                </button>
+                @if (u.status === 'ACTIVE') {
+                  <button mat-menu-item (click)="block(u)">
+                    <mat-icon>block</mat-icon>Block (suspend)
+                  </button>
+                } @else if (u.status === 'SUSPENDED') {
+                  <button mat-menu-item (click)="unblock(u)">
+                    <mat-icon>lock_open</mat-icon>Unblock (reactivate)
+                  </button>
+                } @else if (u.status === 'INACTIVE') {
+                  <button mat-menu-item (click)="approve(u)">
+                    <mat-icon>check_circle</mat-icon>Approve account
+                  </button>
+                }
+                <mat-divider />
+                <button mat-menu-item class="danger" (click)="confirmDelete(u)">
+                  <mat-icon>delete</mat-icon>Delete user
+                </button>
+              </mat-menu>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">No users registered yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

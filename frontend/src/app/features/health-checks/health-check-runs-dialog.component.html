@@ -1,0 +1,27 @@
+<h2 mat-dialog-title>
+  <mat-icon>history</mat-icon> Runs for "{{ data.check.name }}"
+</h2>
+<mat-dialog-content>
+  @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+  @if (runs().length) {
+    <table class="dt">
+      <thead><tr><th>Run ID</th><th>Result</th><th>Details</th><th>Executed by</th><th>When</th></tr></thead>
+      <tbody>
+        @for (r of runs(); track r.runId) {
+          <tr>
+            <td class="num">{{ r.runId }}</td>
+            <td><span class="pill" [class]="'pill-' + (r.result || '').toLowerCase()">{{ r.result }}</span></td>
+            <td>{{ r.details || '—' }}</td>
+            <td>{{ r.executedByName || '—' }}</td>
+            <td class="muted">{{ r.executedAt | date:'short' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (!loading()) {
+    <div class="empty"><mat-icon>history_toggle_off</mat-icon><p>No runs recorded for this check.</p></div>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

@@ -1,0 +1,4 @@
+h2 { display: flex; align-items: center; gap: 8px; }
+.col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }
+.ctx { font-size: 12px; margin: 0 0 8px; }
+.muted { color: var(--text-muted); }

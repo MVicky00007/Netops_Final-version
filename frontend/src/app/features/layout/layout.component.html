@@ -1,0 +1,67 @@
+<mat-sidenav-container class="layout">
+
+  <mat-sidenav #sidenav mode="side" opened class="sidenav">
+    <a routerLink="/dashboard" class="brand">
+      <div class="logo"><mat-icon>cell_tower</mat-icon></div>
+      <span class="brand-name">NetOpsOne</span>
+    </a>
+
+    <nav class="nav">
+      @for (section of visibleSections(); track section.label) {
+        <div class="section">
+          <div class="section-label">{{ section.label }}</div>
+          @for (item of section.items; track item.route) {
+            <a class="nav-item" [routerLink]="item.route" routerLinkActive="active">
+              <mat-icon>{{ item.icon }}</mat-icon>
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="sidenav-footer">v0.0.1 · {{ env }}</div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <header class="topbar">
+      <button mat-icon-button (click)="sidenav.toggle()" matTooltip="Toggle">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="page-title">{{ pageTitle() }}</span>
+      <span class="spacer"></span>
+
+      <button mat-icon-button routerLink="/notifications" matTooltip="Notifications">
+        <mat-icon>notifications_none</mat-icon>
+      </button>
+
+      <button class="user-btn" [matMenuTriggerFor]="userMenu">
+        <div class="avatar">{{ initials() }}</div>
+        <div class="user-info">
+          <span class="user-name">{{ userName() }}</span>
+          <span class="role-pill" [class]="'role-' + roleClass()">{{ auth.role() }}</span>
+        </div>
+        <mat-icon class="caret">expand_more</mat-icon>
+      </button>
+
+      <mat-menu #userMenu="matMenu" xPosition="before">
+        <div class="menu-head">
+          <div class="avatar lg">{{ initials() }}</div>
+          <div>
+            <div class="menu-name">{{ userName() }}</div>
+            <div class="menu-email">{{ auth.email() }}</div>
+          </div>
+        </div>
+        <a mat-menu-item routerLink="/profile"><mat-icon>person</mat-icon>My profile</a>
+        <a mat-menu-item routerLink="/notifications"><mat-icon>notifications</mat-icon>Notifications</a>
+        <a mat-menu-item routerLink="/tasks"><mat-icon>assignment</mat-icon>My tasks</a>
+        <mat-divider />
+        <button mat-menu-item (click)="logout()" class="signout">
+          <mat-icon>logout</mat-icon>Sign out
+        </button>
+      </mat-menu>
+    </header>
+
+    <main class="main"><router-outlet /></main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

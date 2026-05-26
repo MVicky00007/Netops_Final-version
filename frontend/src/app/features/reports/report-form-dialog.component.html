@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>Generate report</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="col">
+    <mat-form-field appearance="outline">
+      <mat-label>Report type</mat-label>
+      <mat-select name="type" [(ngModel)]="model.type" required>
+        <mat-option value="INCIDENT">Incident report</mat-option>
+        <mat-option value="CAPACITY">Capacity report</mat-option>
+        <mat-option value="SLA">SLA compliance report</mat-option>
+      </mat-select>
+      <mat-hint>{{ typeDescription() }}</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Time window</mat-label>
+      <mat-select name="window" [(ngModel)]="model.window" required>
+        <mat-option value="7d">Last 7 days</mat-option>
+        <mat-option value="30d">Last 30 days</mat-option>
+        <mat-option value="90d">Last 90 days</mat-option>
+        <mat-option value="1y">Last 12 months</mat-option>
+        <mat-option value="all">All time</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (model.type === 'INCIDENT') {
+      <mat-form-field appearance="outline">
+        <mat-label>Filter by severity (optional)</mat-label>
+        <mat-select name="severity" [(ngModel)]="model.severity">
+          <mat-option [value]="null">All severities</mat-option>
+          <mat-option value="CRITICAL">Critical only</mat-option>
+          <mat-option value="HIGH">High &amp; above</mat-option>
+          <mat-option value="MEDIUM">Medium &amp; above</mat-option>
+        </mat-select>
+      </mat-form-field>
+    }
+
+    @if (model.type === 'SLA') {
+      <mat-form-field appearance="outline">
+        <mat-label>Filter by priority (optional)</mat-label>
+        <mat-select name="priority" [(ngModel)]="model.priority">
+          <mat-option [value]="null">All priorities</mat-option>
+          <mat-option value="P1">P1 only</mat-option>
+          <mat-option value="P2">P2 &amp; above</mat-option>
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Title (optional)</mat-label>
+      <input matInput name="title" [(ngModel)]="model.title"
+             placeholder="e.g. Q4 incident summary">
+      <mat-hint>Used as the CSV filename.</mat-hint>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">Generate</button>
+  </mat-dialog-actions>
+</form>

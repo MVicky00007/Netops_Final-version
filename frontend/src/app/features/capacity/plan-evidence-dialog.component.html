@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>
+  <mat-icon>folder_open</mat-icon> Evidence for plan #{{ data.plan.planId }}
+</h2>
+<mat-dialog-content>
+  @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+  @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER')) {
+    <div class="uploader">
+      <input #fileInput type="file" hidden (change)="onFile($event)">
+      <button mat-stroked-button type="button" (click)="fileInput.click()">
+        <mat-icon>upload_file</mat-icon> Choose file
+      </button>
+      <span class="fname">{{ file?.name || 'No file chosen' }}</span>
+      <mat-form-field appearance="outline" class="notes">
+        <mat-label>Notes (optional)</mat-label>
+        <input matInput [(ngModel)]="notes" name="notes">
+      </mat-form-field>
+      <button mat-flat-button color="primary" (click)="upload()" [disabled]="!file || uploading()">
+        <mat-icon>cloud_upload</mat-icon> Upload
+      </button>
+    </div>
+  }
+
+  @if (items().length) {
+    <table class="dt">
+      <thead><tr><th>ID</th><th>File</th><th>Notes</th><th>Uploaded by</th><th>When</th><th></th></tr></thead>
+      <tbody>
+        @for (e of items(); track e.evidenceId) {
+          <tr>
+            <td class="num">{{ e.evidenceId }}</td>
+            <td><strong>{{ e.fileName || ('Evidence ' + e.evidenceId) }}</strong></td>
+            <td>{{ e.notes || '—' }}</td>
+            <td>{{ e.uploadedByName || '—' }}</td>
+            <td class="muted">{{ e.uploadedAt | date:'short' }}</td>
+            <td>
+              <button mat-icon-button (click)="download(e)" matTooltip="Download">
+                <mat-icon>download</mat-icon>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (!loading()) {
+    <div class="empty"><mat-icon>cloud_off</mat-icon><p>No evidence uploaded for this plan.</p></div>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

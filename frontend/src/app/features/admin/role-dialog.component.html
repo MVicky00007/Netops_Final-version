@@ -1,0 +1,16 @@
+<h2 mat-dialog-title>Change role for {{ data.user.name || data.user.email }}</h2>
+<mat-dialog-content class="col">
+  <mat-form-field appearance="outline">
+    <mat-label>Role</mat-label>
+    <mat-select [(ngModel)]="role">
+      @for (r of roles; track r) {
+        <mat-option [value]="r">{{ r }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <p class="muted small">Note: changing the role will also set the account status to ACTIVE.</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Cancel</button>
+  <button mat-flat-button color="primary" [mat-dialog-close]="role">Save</button>
+</mat-dialog-actions>

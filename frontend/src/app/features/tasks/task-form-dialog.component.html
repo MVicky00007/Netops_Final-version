@@ -1,0 +1,44 @@
+<h2 mat-dialog-title>Assign task</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="col">
+    <mat-form-field appearance="outline">
+      <mat-label>Assigned user</mat-label>
+      <mat-select name="assignedTo" [(ngModel)]="model.assignedTo" required>
+        @for (u of users(); track u.userId) {
+          <mat-option [value]="u.userId">{{ u.name || u.email }} — {{ u.role }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Description</mat-label>
+      <textarea matInput rows="3" name="description" [(ngModel)]="model.description" required></textarea>
+    </mat-form-field>
+
+    <div class="row2">
+      <mat-form-field appearance="outline">
+        <mat-label>Related entity type</mat-label>
+        <mat-select name="relatedEntityType" [(ngModel)]="model.relatedEntityType">
+          <mat-option value="TICKET">TICKET</mat-option>
+          <mat-option value="FAULT">FAULT</mat-option>
+          <mat-option value="PLAN">PLAN</mat-option>
+          <mat-option value="NODE">NODE</mat-option>
+          <mat-option value="OTHER">OTHER</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Related entity ID</mat-label>
+        <input matInput type="number" name="relatedEntityId" [(ngModel)]="model.relatedEntityId">
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Due date</mat-label>
+      <input matInput type="date" name="dueDate" [(ngModel)]="model.dueDate">
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">Assign</button>
+  </mat-dialog-actions>
+</form>

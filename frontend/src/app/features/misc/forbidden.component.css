@@ -1,0 +1,2 @@
+.wrap { display: grid; place-items: center; min-height: 60vh; gap: 8px; }
+.big { font-size: 80px; height: 80px; width: 80px; color: #c62828; }

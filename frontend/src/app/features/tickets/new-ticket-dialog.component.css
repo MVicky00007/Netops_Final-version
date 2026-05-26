@@ -1,0 +1,2 @@
+h2 { display: flex; align-items: center; gap: 8px; }
+.col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }

@@ -1,0 +1,37 @@
+<h2 mat-dialog-title [class.approve]="data.decision === 'APPROVED'"
+                     [class.reject]="data.decision === 'REJECTED'">
+  <mat-icon>{{ data.decision === 'APPROVED' ? 'check_circle' : 'cancel' }}</mat-icon>
+  {{ data.decision === 'APPROVED' ? 'Approve' : 'Reject' }} plan #{{ data.plan.planId }}
+</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="col">
+    <div class="summary">
+      <div><span class="lbl">Site</span><strong>{{ data.plan.siteName || '—' }}</strong></div>
+      <div><span class="lbl">Current</span>{{ data.plan.currentCapacity }} Mbps</div>
+      <div><span class="lbl">Proposed</span>{{ data.plan.proposedCapacity }} Mbps</div>
+      <div><span class="lbl">Requested by</span>{{ data.plan.requestedByName || '—' }}</div>
+      <div class="full"><span class="lbl">Reason</span>{{ data.plan.reason }}</div>
+    </div>
+
+    <mat-form-field appearance="outline">
+      <mat-label>{{ data.decision === 'APPROVED' ? 'Approval comments (optional)' : 'Reason for rejection' }}</mat-label>
+      <textarea matInput rows="3" name="comments" [(ngModel)]="comments"
+                [required]="data.decision === 'REJECTED'"
+                [placeholder]="data.decision === 'APPROVED'
+                  ? 'e.g. Traffic data justifies upgrade. Proceed with vendor scheduling.'
+                  : 'e.g. Insufficient evidence. Re-submit with MRTG dump for last quarter.'"></textarea>
+      <mat-hint>{{ data.decision === 'REJECTED'
+                   ? 'A clear reason helps the requester address the gap.'
+                   : 'Optional — leave blank for a straight approval.' }}</mat-hint>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button type="submit"
+            [color]="data.decision === 'APPROVED' ? 'primary' : 'warn'"
+            [disabled]="!f.form.valid || submitting()">
+      <mat-icon>{{ data.decision === 'APPROVED' ? 'check_circle' : 'cancel' }}</mat-icon>
+      Confirm {{ data.decision === 'APPROVED' ? 'approval' : 'rejection' }}
+    </button>
+  </mat-dialog-actions>
+</form>

@@ -1,0 +1,47 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>Edge nodes</h1>
+      <p class="muted">Routers and switches across all sites</p>
+    </div>
+    @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) {
+      <button mat-flat-button color="primary" (click)="openCreate()">
+        <mat-icon>add</mat-icon> New node
+      </button>
+    }
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>ID</th><th>Hostname</th><th>Site</th><th>Model</th>
+          <th>Serial</th><th>Status</th><th>Installed</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (n of rows(); track n.nodeId) {
+          <tr>
+            <td class="num">{{ n.nodeId }}</td>
+            <td><strong>{{ n.hostname }}</strong></td>
+            <td>{{ n.siteName || '—' }}</td>
+            <td>{{ n.model || '—' }}</td>
+            <td class="muted">{{ n.serialNumber || '—' }}</td>
+            <td><span class="pill" [class]="'pill-' + (n.status || '').toLowerCase()">{{ n.status }}</span></td>
+            <td class="muted">{{ n.installedAt | date:'mediumDate' }}</td>
+            <td>
+              @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) {
+                <button mat-icon-button (click)="openEdit(n)" matTooltip="Edit">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="8" class="empty">No nodes yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

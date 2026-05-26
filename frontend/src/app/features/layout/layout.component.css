@@ -1,0 +1,84 @@
+.layout { height: 100vh; background: var(--bg-page); }
+
+/* ── Sidenav (220px, dense) ──────────────────────────────────── */
+.sidenav { width: 220px; background: #fff;
+           border-right: 1px solid var(--border-soft);
+           display: flex; flex-direction: column; }
+
+.brand { display: flex; align-items: center; gap: 8px;
+         padding: 12px 14px; height: 52px;
+         border-bottom: 1px solid var(--border-soft);
+         color: var(--text-primary); }
+.logo { width: 26px; height: 26px; border-radius: 6px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: #fff; display: grid; place-items: center; flex-shrink: 0; }
+.logo mat-icon { font-size: 14px !important; height: 14px !important; width: 14px !important; }
+.brand-name { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+
+.nav { flex: 1 1 auto; overflow-y: auto; padding: 8px 0; }
+.section { margin-bottom: 4px; }
+.section-label { font-size: 10px; font-weight: 600; color: var(--text-faint);
+                 text-transform: uppercase; letter-spacing: 0.06em;
+                 padding: 10px 16px 4px; }
+
+.nav-item { display: flex; align-items: center; gap: 10px;
+            padding: 6px 10px; margin: 1px 8px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12.5px; font-weight: 500;
+            cursor: pointer; line-height: 1.3;
+            transition: background .12s ease, color .12s ease; }
+.nav-item:hover { background: rgba(15,23,42,.04); color: var(--text-primary); }
+.nav-item mat-icon { font-size: 16px !important; height: 16px !important; width: 16px !important;
+                     color: var(--text-faint); flex-shrink: 0; }
+.nav-item.active { background: var(--brand-50); color: var(--brand-700); }
+.nav-item.active mat-icon { color: var(--brand-600); }
+
+.sidenav-footer { padding: 8px 16px; border-top: 1px solid var(--border-soft);
+                  color: var(--text-faint); font-size: 10px; letter-spacing: 0.04em; }
+
+/* ── Top bar (52px, slim) ────────────────────────────────────── */
+.topbar { position: sticky; top: 0; z-index: 10;
+          display: flex; align-items: center; gap: 8px;
+          padding: 0 14px 0 8px; height: 52px;
+          background: #fff; border-bottom: 1px solid var(--border-soft); }
+.page-title { font-size: 14px; font-weight: 600; color: var(--text-primary);
+              margin-left: 4px; }
+
+.user-btn { display: flex; align-items: center; gap: 8px;
+            background: transparent; border: 1px solid transparent;
+            padding: 4px 8px 4px 4px; border-radius: 8px; cursor: pointer;
+            font: inherit; color: inherit; }
+.user-btn:hover { background: rgba(15,23,42,.04); border-color: var(--border-soft); }
+
+.avatar { width: 28px; height: 28px; border-radius: 50%;
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          color: #fff; font-weight: 600; font-size: 11px;
+          display: grid; place-items: center; letter-spacing: 0.3px;
+          flex-shrink: 0; }
+.avatar.lg { width: 36px; height: 36px; font-size: 13px; }
+
+.user-info { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+.user-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+
+.role-pill { font-size: 9.5px; font-weight: 600; padding: 1px 6px;
+             border-radius: 4px; margin-top: 1px; letter-spacing: 0.04em;
+             text-transform: uppercase; }
+.role-admin   { background: rgba(30,58,138,.10); color: #1e3a8a; }
+.role-manager { background: rgba(91,33,182,.10); color: #6d28d9; }
+.role-network { background: rgba(6,95,70,.10);   color: #065f46; }
+.role-field   { background: rgba(194,65,12,.10); color: #c2410c; }
+.role-auditor { background: rgba(55,65,81,.10);  color: #374151; }
+.caret { color: var(--text-faint); font-size: 16px !important; height: 16px !important; width: 16px !important; }
+
+/* ── User menu ───────────────────────────────────────────────── */
+.menu-head { display: flex; align-items: center; gap: 10px;
+             padding: 12px 14px;
+             background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+             color: #fff; }
+.menu-name  { font-size: 13px; font-weight: 600; }
+.menu-email { font-size: 11px; opacity: 0.85; }
+.signout, .signout mat-icon { color: var(--danger-fg) !important; }
+
+/* ── Main content ─────────────────────────────────────────────── */
+.main { min-height: calc(100vh - 52px); background: var(--bg-page); }

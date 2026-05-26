@@ -1,0 +1,60 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>Capacity records</h1>
+      <p class="muted">Measured throughput per interface</p>
+    </div>
+    @if (auth.hasRole('ADMIN','NETWORK_ENGINEER')) {
+      <button mat-flat-button color="primary" (click)="openCreate()">
+        <mat-icon>add</mat-icon> Record measurement
+      </button>
+    }
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <div class="scroll">
+    <table class="dt">
+      <colgroup>
+        <col style="width: 56px" />     <!-- ID -->
+        <col style="width: 220px" />    <!-- Site -->
+        <col style="width: 180px" />    <!-- Interface -->
+        <col style="width: 160px" />    <!-- Measured -->
+        <col style="width: 160px" />    <!-- Recorded by -->
+        <col style="width: 150px" />    <!-- Measured at -->
+      </colgroup>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Site</th>
+          <th>Interface</th>
+          <th class="r">Measured (Mbps)</th>
+          <th>Recorded by</th>
+          <th>Measured at</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of rows(); track r.capacityId) {
+          <tr>
+            <td class="num">{{ r.capacityId }}</td>
+            <td>
+              @if (r.siteCode || r.siteName) {
+                <div class="site-name">{{ r.siteCode || '—' }}</div>
+                <div class="site-sub">{{ r.siteName }}</div>
+              } @else { <span class="faint">—</span> }
+            </td>
+            <td>
+              <div class="iface-name">{{ r.interfaceName || '—' }}</div>
+            </td>
+            <td class="r num strong">{{ r.measuredCapacityMbps | number }}</td>
+            <td>{{ r.recordedByName || '—' }}</td>
+            <td class="muted">{{ r.measuredAt | date:'short' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty">No capacity records yet.</td></tr>
+        }
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>

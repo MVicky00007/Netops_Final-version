@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>
+  <mat-icon>attach_file</mat-icon> Attachments for ticket #{{ data.ticketId }}
+</h2>
+<mat-dialog-content>
+  @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+  <div class="uploader">
+    <input #fileInput type="file" hidden (change)="onFile($event)"
+           accept="image/*,application/pdf,.log,.txt,.zip">
+    <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="uploading()">
+      <mat-icon>upload_file</mat-icon> Choose file
+    </button>
+    <span class="fname">{{ file?.name || 'No file chosen' }}</span>
+    <mat-form-field appearance="outline" class="notes">
+      <mat-label>Description (optional)</mat-label>
+      <input matInput [(ngModel)]="description" name="description"
+             placeholder="e.g. Splice closure C-12 after repair">
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="upload()"
+            [disabled]="!file || uploading()">
+      <mat-icon>cloud_upload</mat-icon> Upload
+    </button>
+  </div>
+
+  @if (attachments().length) {
+    <table class="dt">
+      <thead>
+        <tr><th>ID</th><th>Preview / File</th><th>Description</th><th>Uploaded by</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        @for (a of attachments(); track a.attachmentId) {
+          <tr>
+            <td class="num">{{ a.attachmentId }}</td>
+            <td>
+              @if (a.previewUrl && isImage(a.fileUri)) {
+                <img [src]="a.previewUrl" class="thumb" alt="attachment" />
+              } @else {
+                <button mat-stroked-button color="primary" (click)="download(a)">
+                  <mat-icon>download</mat-icon> {{ basename(a.fileUri) }}
+                </button>
+              }
+            </td>
+            <td>{{ a.description || '—' }}</td>
+            <td>{{ a.uploadedByName || '—' }}</td>
+            <td class="muted">{{ a.uploadedAt | date:'short' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else if (!loading()) {
+    <div class="empty">
+      <mat-icon>cloud_off</mat-icon>
+      <p>No attachments uploaded to this ticket yet.</p>
+    </div>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

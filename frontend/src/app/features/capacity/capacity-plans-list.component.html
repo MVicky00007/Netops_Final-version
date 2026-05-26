@@ -1,0 +1,89 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>Capacity plans</h1>
+      <p class="muted">Proposed capacity changes — submit, review, approve</p>
+    </div>
+    @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER')) {
+      <button mat-flat-button color="primary" (click)="openCreate()">
+        <mat-icon>add</mat-icon> Submit new plan
+      </button>
+    }
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <div class="scroll">
+    <table class="dt">
+      <colgroup>
+        <col style="width: 56px" />     <!-- ID -->
+        <col style="width: 170px" />    <!-- Site -->
+        <col style="width: 140px" />    <!-- Capacity change -->
+        <col />                         <!-- Reason -->
+        <col style="width: 130px" />    <!-- Requested by -->
+        <col style="width: 95px" />     <!-- Status -->
+        <col style="width: 130px" />    <!-- Requested at -->
+        <col style="width: 240px" />    <!-- Actions -->
+      </colgroup>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Site</th>
+          <th>Capacity change</th>
+          <th>Reason</th>
+          <th>Requested by</th>
+          <th>Status</th>
+          <th>Requested</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of rows(); track p.planId) {
+          <tr>
+            <td class="num">{{ p.planId }}</td>
+            <td>
+              @if (p.siteCode || p.siteName) {
+                <div class="site-name">{{ p.siteCode || '—' }}</div>
+                <div class="site-sub">{{ p.siteName }}{{ p.interfaceName ? ' · ' + p.interfaceName : '' }}</div>
+              } @else { <span class="faint">—</span> }
+            </td>
+            <td>
+              <div class="cap-change">
+                <span class="cap-cur">{{ p.currentCapacity | number }}</span>
+                <mat-icon class="cap-arrow">arrow_forward</mat-icon>
+                <span class="cap-new">{{ p.proposedCapacity | number }}</span>
+              </div>
+              <div class="cap-unit">Mbps</div>
+            </td>
+            <td class="reason" [matTooltip]="p.reason">{{ p.reason }}</td>
+            <td>{{ p.requestedByName || '—' }}</td>
+            <td>
+              <span class="pill" [class]="'pill-' + (p.status || '').toLowerCase()">{{ p.status }}</span>
+            </td>
+            <td class="muted">{{ p.requestedAt | date:'short' }}</td>
+            <td class="actions-cell">
+              <button mat-icon-button (click)="openEvidence(p)" matTooltip="Evidence files">
+                <mat-icon>folder_open</mat-icon>
+              </button>
+              @if (auth.hasRole('ADMIN','MANAGER') && p.status === 'PENDING') {
+                <button mat-flat-button color="primary" class="act act-approve"
+                        (click)="openDecision(p, 'APPROVED')">
+                  <mat-icon>check_circle</mat-icon>Approve
+                </button>
+                <button mat-stroked-button color="warn" class="act act-reject"
+                        (click)="openDecision(p, 'REJECTED')">
+                  <mat-icon>cancel</mat-icon>Reject
+                </button>
+              } @else {
+                <span class="faint">decision recorded</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="8" class="empty">No capacity plans yet.</td></tr>
+        }
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>

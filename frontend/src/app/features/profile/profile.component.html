@@ -1,0 +1,109 @@
+<div class="page">
+  <div class="hdr">
+    <h1>My profile</h1>
+    <p class="muted">Update your personal details or change your password</p>
+  </div>
+
+  @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+  @if (user(); as u) {
+    <div class="grid">
+      <!-- ── Identity card (read-only) ─────────────────────────────────── -->
+      <mat-card class="identity">
+        <div class="avatar">{{ initials() }}</div>
+        <div class="who">
+          <h2>{{ u.name }}</h2>
+          <p class="muted">{{ u.email }}</p>
+          <div class="badges">
+            <mat-chip class="role-chip">{{ u.role }}</mat-chip>
+            <mat-chip class="status-chip"
+                      [class.status-active]="u.status === 'ACTIVE'"
+                      [class.status-inactive]="u.status === 'INACTIVE'"
+                      [class.status-suspended]="u.status === 'SUSPENDED'">
+              {{ u.status }}
+            </mat-chip>
+          </div>
+        </div>
+      </mat-card>
+
+      <!-- ── Edit details ──────────────────────────────────────────────── -->
+      <mat-card class="form-card">
+        <mat-card-header>
+          <mat-card-title>Personal details</mat-card-title>
+          <mat-card-subtitle>Name and phone can be changed — email and role are managed by admins</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <form (ngSubmit)="saveProfile()" #f="ngForm" class="form-grid">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Full name</mat-label>
+              <input matInput name="name" [(ngModel)]="form.name" required>
+              <mat-icon matSuffix>person</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Phone</mat-label>
+              <input matInput name="phone" [(ngModel)]="form.phone" placeholder="Optional">
+              <mat-icon matSuffix>call</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width readonly">
+              <mat-label>Email (read-only)</mat-label>
+              <input matInput [value]="u.email" disabled>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width readonly">
+              <mat-label>Role (read-only)</mat-label>
+              <input matInput [value]="u.role" disabled>
+            </mat-form-field>
+
+            <div class="actions">
+              <button mat-flat-button color="primary" type="submit"
+                      [disabled]="!f.form.valid || saving()">
+                <mat-icon>save</mat-icon>
+                {{ saving() ? 'Saving…' : 'Save changes' }}
+              </button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- ── Change password ───────────────────────────────────────────── -->
+      <mat-card class="form-card">
+        <mat-card-header>
+          <mat-card-title>Change password</mat-card-title>
+          <mat-card-subtitle>You'll be signed out and need to log in again with the new password</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <form (ngSubmit)="changePassword()" #pf="ngForm" class="form-grid">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>New password</mat-label>
+              <input matInput [type]="hidePassword ? 'password' : 'text'"
+                     name="newPassword" [(ngModel)]="pw.newPassword" required minlength="4">
+              <button mat-icon-button matSuffix type="button" (click)="hidePassword = !hidePassword">
+                <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Confirm new password</mat-label>
+              <input matInput [type]="hidePassword ? 'password' : 'text'"
+                     name="confirmPassword" [(ngModel)]="pw.confirmPassword" required minlength="4">
+            </mat-form-field>
+
+            <div class="actions">
+              <button mat-stroked-button color="warn" type="submit"
+                      [disabled]="!pf.form.valid || changingPassword()">
+                <mat-icon>lock_reset</mat-icon>
+                {{ changingPassword() ? 'Updating…' : 'Change password' }}
+              </button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+
+  @if (msg()) {
+    <p class="status-msg" [class.error]="isError()" [class.success]="!isError()">{{ msg() }}</p>
+  }
+</div>

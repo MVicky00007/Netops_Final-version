@@ -1,0 +1,43 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>KPIs</h1>
+      <p class="muted">Tracked service-quality metrics</p>
+    </div>
+    @if (auth.hasRole('ADMIN','MANAGER')) {
+      <button mat-flat-button color="primary" (click)="openForm()">
+        <mat-icon>add</mat-icon> New KPI
+      </button>
+    }
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <table class="dt">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Definition</th><th>Target</th><th>Current</th><th>Period</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        @for (k of rows(); track k.kpiId) {
+          <tr>
+            <td>{{ k.kpiId }}</td>
+            <td><strong>{{ k.name }}</strong></td>
+            <td>{{ k.definition }}</td>
+            <td class="num">{{ k.targetValue }}</td>
+            <td class="num" [class.good]="k.currentValue >= k.targetValue">{{ k.currentValue }}</td>
+            <td>{{ k.reportingPeriod }}</td>
+            <td>
+              @if (auth.hasRole('ADMIN','MANAGER')) {
+                <button mat-icon-button (click)="openForm(k)" matTooltip="Edit">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">No KPIs yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

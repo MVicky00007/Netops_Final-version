@@ -1,0 +1,2 @@
+.col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

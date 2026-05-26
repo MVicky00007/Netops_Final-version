@@ -15,7 +15,7 @@ export const routes: Routes = [
   // ── Public ──────────────────────────────────────────────────────────
   { path: 'login',           loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent) },
   { path: 'signup',          loadComponent: () => import('./features/auth/signup/signup.component').then(m => m.SignupComponent) },
-  { path: 'forgot-password', loadComponent: () => comingSoon('Forgot password') },
+  { path: 'forgot-password', loadComponent: () => import('./features/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) },
   { path: 'forbidden',       loadComponent: () => import('./features/misc/forbidden.component').then(m => m.ForbiddenComponent) },
 
   // ── Protected app shell ─────────────────────────────────────────────
@@ -27,7 +27,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 
       { path: 'dashboard',     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent) },
-      { path: 'profile',       loadComponent: () => comingSoon('Profile') },
+      { path: 'profile',       loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent) },
       { path: 'notifications', loadComponent: () => import('./features/notifications/notifications-list.component').then(m => m.NotificationsListComponent) },
 
       // ── Sites (everyone can view; ADMIN/MANAGER can edit) ────────

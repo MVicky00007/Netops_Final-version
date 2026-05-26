@@ -1,0 +1,51 @@
+<div class="dt-card">
+  <div class="dt-head">
+    <div class="dt-title">
+      <h2>{{ title }}</h2>
+      @if (subtitle) { <span class="dt-sub">{{ subtitle }}</span> }
+    </div>
+    @if (rows.length) {
+      <span class="dt-count">{{ rows.length }} {{ rows.length === 1 ? 'item' : 'items' }}</span>
+    }
+    <ng-content select="[actions]"></ng-content>
+  </div>
+  @if (loading) { <mat-progress-bar mode="indeterminate" class="dt-progress" /> }
+  <div class="dt-wrap">
+    <table class="dt">
+      <thead>
+        <tr>
+          @for (c of columns; track c.key) {
+            <th [style.width]="c.width || null">{{ c.label }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @if (rows.length) {
+          @for (row of rows; track $index) {
+            <tr>
+              @for (c of columns; track c.key) {
+                <td>
+                  @switch (c.kind) {
+                    @case ('date')     { <span class="muted">{{ row[c.key] | date:'short' }}</span> }
+                    @case ('status')   { <span class="pill" [class]="'pill-' + (row[c.key] | lowercase)">{{ row[c.key] }}</span> }
+                    @case ('priority') { <span class="pri" [class]="'pri-' + (row[c.key] | lowercase)">{{ row[c.key] }}</span> }
+                    @case ('number')   { <span class="num">{{ row[c.key] }}</span> }
+                    @case ('bool')     { @if (row[c.key]) { <mat-icon class="bool-y">check_circle</mat-icon> } @else { <mat-icon class="bool-n">remove_circle_outline</mat-icon> } }
+                    @default           { <span>{{ row[c.key] ?? '—' }}</span> }
+                  }
+                </td>
+              }
+            </tr>
+          }
+        } @else if (!loading) {
+          <tr>
+            <td [attr.colspan]="columns.length" class="dt-empty">
+              <mat-icon>inbox</mat-icon>
+              <div>No {{ entityName || 'items' }} yet.</div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

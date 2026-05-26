@@ -20,64 +20,8 @@ import { UserRole } from '../../../core/models/user.model';
     MatCardModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatSelectModule,
   ],
-  template: `
-    <div class="signup-wrap">
-      <mat-card class="signup-card">
-        <mat-card-header>
-          <mat-card-title>Create account</mat-card-title>
-          <mat-card-subtitle>You'll be active after an admin approves</mat-card-subtitle>
-        </mat-card-header>
-
-        <mat-card-content>
-          <form (ngSubmit)="submit()" #f="ngForm">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Full name</mat-label>
-              <input matInput name="name" [(ngModel)]="name" required>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Email</mat-label>
-              <input matInput type="email" name="email" [(ngModel)]="email" required>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Phone</mat-label>
-              <input matInput name="phone" [(ngModel)]="phone">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Role</mat-label>
-              <mat-select name="role" [(ngModel)]="role" required>
-                @for (r of roles; track r) { <mat-option [value]="r">{{ r }}</mat-option> }
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Password</mat-label>
-              <input matInput type="password" name="password" [(ngModel)]="password" required minlength="4">
-            </mat-form-field>
-
-            @if (msg()) { <p [class.error]="isError()">{{ msg() }}</p> }
-
-            <button mat-flat-button color="primary" type="submit" class="full-width"
-                    [disabled]="!f.form.valid">Sign up</button>
-          </form>
-        </mat-card-content>
-
-        <mat-card-actions align="end">
-          <a mat-button routerLink="/login">Already have an account? Log in</a>
-        </mat-card-actions>
-      </mat-card>
-    </div>
-  `,
-  styles: `
-    .signup-wrap { min-height: 100vh; display: grid; place-items: center; background: #eceff1; }
-    .signup-card { width: 420px; max-width: 92vw; }
-    .full-width { width: 100%; }
-    form { display: flex; flex-direction: column; gap: 4px; }
-    .error { color: #c62828; }
-    p { font-size: 14px; margin: 4px 0 12px; }
-  `,
+  templateUrl: './signup.component.html',
+  styleUrl: './signup.component.css',
 })
 export class SignupComponent {
   private auth = inject(AuthService);

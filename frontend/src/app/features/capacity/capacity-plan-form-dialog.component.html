@@ -1,0 +1,53 @@
+<h2 mat-dialog-title>Submit capacity plan</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="grid">
+    <mat-form-field appearance="outline">
+      <mat-label>Site</mat-label>
+      <mat-select name="siteId" [(ngModel)]="model.siteId" (selectionChange)="onSiteChange($event.value)" required>
+        @for (s of sites(); track s.siteId) {
+          <mat-option [value]="s.siteId">{{ s.siteCode }} — {{ s.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Node</mat-label>
+      <mat-select name="nodeId" [(ngModel)]="selectedNodeId" (selectionChange)="onNodeChange($event.value)"
+                  [disabled]="!model.siteId || !nodes().length" required>
+        @for (n of nodes(); track n.nodeId) {
+          <mat-option [value]="n.nodeId">{{ n.hostname }}</mat-option>
+        }
+      </mat-select>
+      @if (model.siteId && !nodes().length) { <mat-hint>No nodes at this site</mat-hint> }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="col-span-2">
+      <mat-label>Interface</mat-label>
+      <mat-select name="interfaceId" [(ngModel)]="model.interfaceId"
+                  [disabled]="!selectedNodeId || !interfaces().length" required>
+        @for (i of interfaces(); track i.interfaceId) {
+          <mat-option [value]="i.interfaceId">{{ i.name }} ({{ i.capacityMbps }} Mbps)</mat-option>
+        }
+      </mat-select>
+      @if (selectedNodeId && !interfaces().length) { <mat-hint>No interfaces on this node</mat-hint> }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Current capacity (Mbps)</mat-label>
+      <input matInput type="number" name="currentCapacity" [(ngModel)]="model.currentCapacity" required min="0">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Proposed capacity (Mbps)</mat-label>
+      <input matInput type="number" name="proposedCapacity" [(ngModel)]="model.proposedCapacity" required min="0">
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="col-span-2">
+      <mat-label>Reason</mat-label>
+      <textarea matInput rows="3" name="reason" [(ngModel)]="model.reason" required
+                placeholder="Why is this capacity change needed?"></textarea>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">Submit plan</button>
+  </mat-dialog-actions>
+</form>
