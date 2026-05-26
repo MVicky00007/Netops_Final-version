@@ -1,7 +1,26 @@
 h2 { display: flex; align-items: center; gap: 8px; }
-.uploader { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0 16px; }
+.uploader { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0 4px; }
 .uploader .notes { flex: 1 1 200px; }
 .fname { font-size: 12px; color: var(--text-muted); }
+.fname .size { color: var(--text-faint); font-variant-numeric: tabular-nums; margin-left: 4px; }
+
+/* Hint shown beneath the uploader explaining the rules */
+.hint {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--text-muted);
+  margin: 0 0 12px;
+}
+.hint-icon { font-size: 14px !important; height: 14px !important; width: 14px !important; }
+.hint strong { color: var(--text-default); font-weight: 600; }
+
+/* Red error block when a bad file is picked */
+.file-error {
+  display: flex; align-items: center; gap: 6px;
+  background: #ffebee; color: #c62828;
+  padding: 8px 12px; border-radius: 6px;
+  font-size: 12.5px; margin: 0 0 16px;
+}
+.err-icon { font-size: 16px !important; height: 16px !important; width: 16px !important; }
 .dt { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
 .dt th, .dt td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-soft); }
 .dt th { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;

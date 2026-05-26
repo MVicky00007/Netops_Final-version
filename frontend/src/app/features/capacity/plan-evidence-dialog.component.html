@@ -6,11 +6,17 @@
 
   @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER')) {
     <div class="uploader">
-      <input #fileInput type="file" hidden (change)="onFile($event)">
+      <input #fileInput type="file" hidden [accept]="ACCEPT" (change)="onFile($event)">
       <button mat-stroked-button type="button" (click)="fileInput.click()">
-        <mat-icon>upload_file</mat-icon> Choose file
+        <mat-icon>image</mat-icon> Choose image
       </button>
-      <span class="fname">{{ file?.name || 'No file chosen' }}</span>
+      <span class="fname">
+        @if (file) {
+          {{ file.name }} <span class="size">({{ fileSizeLabel() }})</span>
+        } @else {
+          No file chosen
+        }
+      </span>
       <mat-form-field appearance="outline" class="notes">
         <mat-label>Notes (optional)</mat-label>
         <input matInput [(ngModel)]="notes" name="notes">
@@ -19,6 +25,18 @@
         <mat-icon>cloud_upload</mat-icon> Upload
       </button>
     </div>
+
+    <p class="hint">
+      <mat-icon class="hint-icon">info</mat-icon>
+      Only image files allowed: <strong>JPG, JPEG, PNG, GIF, WEBP</strong> &middot; max 5 MB
+    </p>
+
+    @if (fileError()) {
+      <p class="file-error">
+        <mat-icon class="err-icon">error_outline</mat-icon>
+        {{ fileError() }}
+      </p>
+    }
   }
 
   @if (items().length) {
