@@ -59,3 +59,8 @@ frontend/*.tsbuildinfo
 
 # Local upload storage (per-service)
 backend/*/uploads/
+
+# Local backend startup logs
+*-start.log
+incident-svc.log
+cap-svc.log
