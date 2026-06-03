@@ -1,0 +1,32 @@
+<div class="page">
+  <div class="dt-card">
+    <div class="dt-head">
+      <div>
+        <h2>Pending approvals</h2>
+        <div class="dt-sub">New sign-ups awaiting an admin's review</div>
+      </div>
+      @if (rows().length) { <span class="dt-count">{{ rows().length }} waiting</span> }
+    </div>
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+    @if (rows().length) {
+      @for (u of rows(); track u.userId) {
+        <div class="row">
+          <div class="avatar">{{ initials(u) }}</div>
+          <div class="body">
+            <div class="title">{{ u.name }} <span class="muted">({{ u.role }})</span></div>
+            <div class="meta">{{ u.email }} · {{ u.phone || 'no phone' }}</div>
+          </div>
+          <button mat-flat-button color="primary" (click)="approve(u.userId)" [disabled]="busy() === u.userId">
+            <mat-icon>check</mat-icon> Approve
+          </button>
+        </div>
+      }
+    } @else if (!loading()) {
+      <div class="empty">
+        <mat-icon>check_circle</mat-icon>
+        <div>No pending approvals.</div>
+      </div>
+    }
+  </div>
+</div>

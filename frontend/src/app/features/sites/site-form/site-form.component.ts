@@ -22,75 +22,8 @@ import { SiteRequest, SiteStatus } from '../../../core/models/site.model';
     MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule,
     MatButtonModule, MatIconModule, MatProgressBarModule,
   ],
-  template: `
-    <div class="page">
-      <a mat-button routerLink="/sites"><mat-icon>arrow_back</mat-icon> Back to sites</a>
-
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>{{ id ? 'Edit site' : 'New site' }}</mat-card-title>
-        </mat-card-header>
-
-        @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
-
-        <mat-card-content>
-          <form (ngSubmit)="submit()" #f="ngForm" class="form">
-            <mat-form-field appearance="outline">
-              <mat-label>Site code</mat-label>
-              <input matInput name="siteCode" [(ngModel)]="model.siteCode" required>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Name</mat-label>
-              <input matInput name="name" [(ngModel)]="model.name" required>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Region</mat-label>
-              <input matInput name="region" [(ngModel)]="model.region">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Status</mat-label>
-              <mat-select name="status" [(ngModel)]="model.status" required>
-                @for (s of statuses; track s) { <mat-option [value]="s">{{ s }}</mat-option> }
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="col-span-2">
-              <mat-label>Address</mat-label>
-              <input matInput name="address" [(ngModel)]="model.address">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Latitude</mat-label>
-              <input matInput type="number" name="latitude" [(ngModel)]="model.latitude" step="0.0001">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Longitude</mat-label>
-              <input matInput type="number" name="longitude" [(ngModel)]="model.longitude" step="0.0001">
-            </mat-form-field>
-
-            <div class="actions col-span-2">
-              <a mat-button routerLink="/sites">Cancel</a>
-              <button mat-flat-button color="primary" type="submit"
-                      [disabled]="!f.form.valid || saving()">
-                {{ id ? 'Save changes' : 'Create site' }}
-              </button>
-            </div>
-          </form>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  `,
-  styles: `
-    .page { padding: 24px; max-width: 900px; margin: 0 auto; }
-    mat-card { margin-top: 16px; }
-    .form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 16px; }
-    .col-span-2 { grid-column: span 2; }
-    .actions { display: flex; justify-content: flex-end; gap: 8px; }
-  `,
+  templateUrl: './site-form.component.html',
+  styleUrl: './site-form.component.css',
 })
 export class SiteFormComponent implements OnInit {
   @Input() id?: string;   // populated by withComponentInputBinding() from route params

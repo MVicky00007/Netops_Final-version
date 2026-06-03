@@ -1,0 +1,20 @@
+<h2 mat-dialog-title><mat-icon class="warn">warning</mat-icon> Delete this user?</h2>
+<mat-dialog-content>
+  <p>You're about to permanently delete:</p>
+  <ul>
+    <li><strong>{{ data.user.name || data.user.email }}</strong></li>
+    <li>{{ data.user.email }}</li>
+    <li>Role: {{ data.user.role }}</li>
+  </ul>
+  <p class="warn-text">
+    If this user has reported faults, opened tickets, approved plans, or has other
+    records pointing to them, the delete will fail with a foreign-key error. Consider
+    blocking them instead.
+  </p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Cancel</button>
+  <button mat-flat-button color="warn" [mat-dialog-close]="true">
+    <mat-icon>delete</mat-icon> Delete
+  </button>
+</mat-dialog-actions>

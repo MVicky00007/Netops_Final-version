@@ -1,0 +1,5 @@
+.page { padding: 24px; max-width: 720px; margin: 0 auto; }
+.content { text-align: center; padding: 48px 24px; }
+.big { font-size: 64px; height: 64px; width: 64px; color: #ef6c00; }
+h2 { margin: 16px 0 8px; }
+p { color: rgba(0,0,0,.6); margin: 0; }

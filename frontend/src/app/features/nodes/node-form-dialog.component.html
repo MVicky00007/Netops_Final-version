@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>{{ data.node ? 'Edit node' : 'Create node' }}</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="grid">
+    @if (!data.node) {
+      <mat-form-field appearance="outline" class="col-span-2">
+        <mat-label>Site</mat-label>
+        <mat-select name="siteId" [(ngModel)]="siteId" required>
+          @for (s of sites(); track s.siteId) {
+            <mat-option [value]="s.siteId">{{ s.siteCode }} — {{ s.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+    <mat-form-field appearance="outline">
+      <mat-label>Hostname</mat-label>
+      <input matInput name="hostname" [(ngModel)]="model.hostname" required>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select name="status" [(ngModel)]="model.status" required>
+        <mat-option value="ONLINE">ONLINE</mat-option>
+        <mat-option value="OFFLINE">OFFLINE</mat-option>
+        <mat-option value="DEGRADED">DEGRADED</mat-option>
+        <mat-option value="MAINTENANCE">MAINTENANCE</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Model</mat-label>
+      <input matInput name="model" [(ngModel)]="model.model">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Serial number</mat-label>
+      <input matInput name="serialNumber" [(ngModel)]="model.serialNumber">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Management IP</mat-label>
+      <input matInput name="managementIp" [(ngModel)]="model.managementIp">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Installed at</mat-label>
+      <input matInput type="date" name="installedAt" [(ngModel)]="model.installedAt">
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">
+      {{ data.node ? 'Save' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</form>

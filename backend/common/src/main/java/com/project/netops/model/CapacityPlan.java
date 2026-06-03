@@ -3,7 +3,6 @@ package com.project.netops.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "capacity_plans")
@@ -49,9 +48,6 @@ public class CapacityPlan {
 
     @OneToOne(mappedBy = "plan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private CapacityApproval approval;
-
-    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ChangeEvidence> evidenceFiles;
 
     @PrePersist
     protected void onCreate() {

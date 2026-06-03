@@ -163,27 +163,8 @@ export class ApiService {
     return this.http.get<ApiResponse<any>>(`${this.base}/api/v1/tickets/${ticketId}/sla`).pipe(map((r) => r.data));
   }
 
-  ticketAttachments(ticketId: number): Observable<any[]> {
-    return unwrap(this.http.get<ApiResponse<any[]>>(`${this.base}/api/v1/tickets/${ticketId}/attachments`));
-  }
-  uploadTicketAttachment(ticketId: number, body: any): Observable<any> {
-    return this.http.post<ApiResponse<any>>(`${this.base}/api/v1/tickets/${ticketId}/attachments`, body).pipe(map((r) => r.data));
-  }
-  /** Multipart file upload — used for image/photo attachments from field engineers. */
-  uploadTicketAttachmentFile(ticketId: number, file: File, uploadedById: number, description?: string): Observable<any> {
-    const form = new FormData();
-    form.append('file', file);
-    form.append('uploadedById', String(uploadedById));
-    if (description) form.append('description', description);
-    return this.http
-      .post<ApiResponse<any>>(`${this.base}/api/v1/tickets/${ticketId}/attachments/upload`, form)
-      .pipe(map((r) => r.data));
-  }
-  /** Stream an attachment as a blob (renders inline if it's an image). */
-  downloadTicketAttachment(ticketId: number, attachmentId: number): Observable<Blob> {
-    return this.http.get(`${this.base}/api/v1/tickets/${ticketId}/attachments/${attachmentId}/download`,
-                         { responseType: 'blob' });
-  }
+  // Ticket attachments removed from scope — tickets now carry only their
+  // resolution-notes text, no file uploads/downloads.
 
   notifications(userId: number): Observable<any[]> {
     return unwrap(this.http.get<ApiResponse<any[]>>(`${this.base}/api/v1/notifications/user/${userId}`));
@@ -214,24 +195,8 @@ export class ApiService {
     return this.http.post<ApiResponse<any>>(`${this.base}/capacity-records`, body).pipe(map((r) => r.data));
   }
 
-  // -- change evidence files attached to capacity plans -------------------
-  planEvidence(planId: number): Observable<any[]> {
-    return unwrap(this.http.get<ApiResponse<any[]>>(`${this.base}/capacity-plans/${planId}/evidence`));
-  }
-  /** Upload an evidence file (multipart) to a capacity plan. */
-  uploadPlanEvidence(planId: number, file: File, uploadedBy: number, notes?: string): Observable<any> {
-    const form = new FormData();
-    form.append('file', file);
-    form.append('uploadedBy', String(uploadedBy));
-    if (notes) form.append('notes', notes);
-    return this.http
-      .post<ApiResponse<any>>(`${this.base}/capacity-plans/${planId}/evidence`, form)
-      .pipe(map((r) => r.data));
-  }
-  /** Stream a file blob for download. */
-  downloadPlanEvidence(planId: number, evidenceId: number): Observable<Blob> {
-    return this.http.get(`${this.base}/capacity-plans/${planId}/evidence/${evidenceId}/download`, { responseType: 'blob' });
-  }
+  // Change-evidence endpoints removed from scope — plans are reviewed on the
+  // strength of their written reason alone; no file attachments.
 
   // -- health checks ------------------------------------------------------
   healthChecks():    Observable<any[]> { return unwrap(this.http.get<ApiResponse<any[]>>(`${this.base}/api/v1/health-checks`)); }

@@ -1,0 +1,34 @@
+<div class="page">
+  <a mat-button routerLink="/sites"><mat-icon>arrow_back</mat-icon> Back to sites</a>
+
+  @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+  @if (site(); as s) {
+    <mat-card class="detail-card">
+      <mat-card-header>
+        <mat-card-title>{{ s.name }}</mat-card-title>
+        <mat-card-subtitle>{{ s.siteCode }} · {{ s.region || 'No region' }}</mat-card-subtitle>
+        <span class="spacer"></span>
+        <mat-chip [class.status-active]="s.status === 'ACTIVE'"
+                  [class.status-maint]="s.status === 'MAINTENANCE'"
+                  [class.status-inactive]="s.status === 'INACTIVE'">{{ s.status }}</mat-chip>
+      </mat-card-header>
+
+      <mat-card-content>
+        <dl class="fields">
+          <dt>Address</dt><dd>{{ s.address || '—' }}</dd>
+          <dt>Latitude</dt><dd>{{ s.latitude ?? '—' }}</dd>
+          <dt>Longitude</dt><dd>{{ s.longitude ?? '—' }}</dd>
+        </dl>
+      </mat-card-content>
+
+      <mat-card-actions>
+        @if (auth.hasRole('ADMIN', 'MANAGER')) {
+          <a mat-button color="primary" [routerLink]="['/sites', s.siteId, 'edit']">
+            <mat-icon>edit</mat-icon> Edit
+          </a>
+        }
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>

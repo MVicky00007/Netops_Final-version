@@ -1,0 +1,55 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>My tasks</h1>
+      <p class="muted">Tasks assigned to you</p>
+    </div>
+    <div class="hdr-actions">
+      <mat-button-toggle-group [(ngModel)]="filter" (change)="onFilterChange()">
+        <mat-button-toggle value="all">All</mat-button-toggle>
+        <mat-button-toggle value="pending">Pending only</mat-button-toggle>
+      </mat-button-toggle-group>
+      @if (auth.hasRole('ADMIN','MANAGER')) {
+        <button mat-flat-button color="primary" (click)="openCreate()">
+          <mat-icon>add</mat-icon> Assign task
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>ID</th><th>Description</th><th>Related</th>
+          <th>Due</th><th>Status</th><th>Update</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of rows(); track t.taskId) {
+          <tr>
+            <td>{{ t.taskId }}</td>
+            <td>{{ t.description }}</td>
+            <td>{{ t.relatedEntityId || '—' }}</td>
+            <td class="muted">{{ t.dueDate | date:'mediumDate' }}</td>
+            <td><span class="pill" [class]="'pill-' + (t.status || '').toLowerCase()">{{ t.status }}</span></td>
+            <td>
+              <button mat-icon-button [matMenuTriggerFor]="m">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #m="matMenu">
+                <button mat-menu-item (click)="updateStatus(t.taskId, 'IN_PROGRESS')"><mat-icon>play_arrow</mat-icon>Start (in progress)</button>
+                <button mat-menu-item (click)="updateStatus(t.taskId, 'COMPLETED')"><mat-icon>check_circle</mat-icon>Mark completed</button>
+                <button mat-menu-item (click)="updateStatus(t.taskId, 'CANCELLED')"><mat-icon>cancel</mat-icon>Cancel</button>
+                <button mat-menu-item (click)="updateStatus(t.taskId, 'PENDING')"><mat-icon>hourglass_top</mat-icon>Reset to pending</button>
+              </mat-menu>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty">No tasks {{ filter === 'pending' ? 'pending' : 'assigned' }}.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

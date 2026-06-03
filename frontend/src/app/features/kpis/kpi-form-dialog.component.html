@@ -1,0 +1,39 @@
+<h2 mat-dialog-title>{{ data.kpi ? 'Edit KPI' : 'Create KPI' }}</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="col">
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput name="name" [(ngModel)]="model.name" required>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Definition</mat-label>
+      <input matInput name="definition" [(ngModel)]="model.definition">
+    </mat-form-field>
+    <div class="row2">
+      <mat-form-field appearance="outline">
+        <mat-label>Target</mat-label>
+        <input matInput type="number" step="0.01" name="targetValue" [(ngModel)]="model.targetValue">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Current</mat-label>
+        <input matInput type="number" step="0.01" name="currentValue" [(ngModel)]="model.currentValue">
+      </mat-form-field>
+    </div>
+    <mat-form-field appearance="outline">
+      <mat-label>Reporting period</mat-label>
+      <mat-select name="reportingPeriod" [(ngModel)]="model.reportingPeriod">
+        <mat-option value="DAILY">DAILY</mat-option>
+        <mat-option value="WEEKLY">WEEKLY</mat-option>
+        <mat-option value="MONTHLY">MONTHLY</mat-option>
+        <mat-option value="QUARTERLY">QUARTERLY</mat-option>
+        <mat-option value="ANNUAL">ANNUAL</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">
+      {{ data.kpi ? 'Save' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</form>

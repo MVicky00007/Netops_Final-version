@@ -1,0 +1,60 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>Health checks</h1>
+      <p class="muted">Automated probes monitoring the network</p>
+    </div>
+    <div class="hdr-actions">
+      <mat-button-toggle-group [(ngModel)]="filter" (change)="load()">
+        <mat-button-toggle value="all">All</mat-button-toggle>
+        <mat-button-toggle value="active">Active only</mat-button-toggle>
+      </mat-button-toggle-group>
+      @if (auth.hasRole('ADMIN','NETWORK_ENGINEER')) {
+        <button mat-flat-button color="primary" (click)="openForm()">
+          <mat-icon>add</mat-icon> New check
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>ID</th><th>Name</th><th>Target</th><th>Condition</th>
+          <th>Created by</th><th>Active</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (h of rows(); track h.checkId) {
+          <tr>
+            <td class="num">{{ h.checkId }}</td>
+            <td><strong>{{ h.name }}</strong></td>
+            <td>{{ h.targetType }}</td>
+            <td>{{ h.conditionText }}</td>
+            <td>{{ h.createdByName || '—' }}</td>
+            <td>
+              @if (h.active) { <mat-icon class="ok">check_circle</mat-icon> }
+              @else { <mat-icon class="off">remove_circle_outline</mat-icon> }
+            </td>
+            <td>
+              <button mat-icon-button [matMenuTriggerFor]="m">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #m="matMenu">
+                @if (auth.hasRole('ADMIN','NETWORK_ENGINEER')) {
+                  <button mat-menu-item (click)="run(h)"><mat-icon>play_arrow</mat-icon>Run now</button>
+                  <button mat-menu-item (click)="openForm(h)"><mat-icon>edit</mat-icon>Edit</button>
+                }
+                <button mat-menu-item (click)="viewRuns(h)"><mat-icon>history</mat-icon>View runs</button>
+              </mat-menu>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">No health checks defined.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

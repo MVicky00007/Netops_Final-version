@@ -1,0 +1,65 @@
+<h2 mat-dialog-title>{{ data.iface ? 'Edit interface' : 'Create interface' }}</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="grid">
+    @if (!data.iface) {
+      <mat-form-field appearance="outline" class="col-span-2">
+        <mat-label>Site</mat-label>
+        <mat-select [(ngModel)]="siteId" name="siteId" (selectionChange)="onSite($event.value)" required>
+          @for (s of sites(); track s.siteId) {
+            <mat-option [value]="s.siteId">{{ s.siteCode }} — {{ s.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="col-span-2">
+        <mat-label>Node</mat-label>
+        <mat-select [(ngModel)]="nodeId" name="nodeId" [disabled]="!siteId" required>
+          @for (n of nodes(); track n.nodeId) {
+            <mat-option [value]="n.nodeId">{{ n.hostname }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+    <mat-form-field appearance="outline">
+      <mat-label>Name (e.g. Gi0/1)</mat-label>
+      <input matInput name="name" [(ngModel)]="model.name" required>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Type</mat-label>
+      <mat-select name="type" [(ngModel)]="model.type">
+        <mat-option value="FIBER">FIBER</mat-option>
+        <mat-option value="COPPER">COPPER</mat-option>
+        <mat-option value="WIRELESS">WIRELESS</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Capacity (Mbps)</mat-label>
+      <input matInput type="number" name="capacityMbps" [(ngModel)]="model.capacityMbps" min="0">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>IP address</mat-label>
+      <input matInput name="ipAddress" [(ngModel)]="model.ipAddress">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Admin status</mat-label>
+      <mat-select name="adminStatus" [(ngModel)]="model.adminStatus">
+        <mat-option value="UP">UP</mat-option>
+        <mat-option value="DOWN">DOWN</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Oper status</mat-label>
+      <mat-select name="operStatus" [(ngModel)]="model.operStatus">
+        <mat-option value="UP">UP</mat-option>
+        <mat-option value="DOWN">DOWN</mat-option>
+        <mat-option value="TESTING">TESTING</mat-option>
+        <mat-option value="UNKNOWN">UNKNOWN</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">
+      {{ data.iface ? 'Save' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</form>

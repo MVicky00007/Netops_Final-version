@@ -1,0 +1,58 @@
+<h2 mat-dialog-title>Report a new fault</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="grid">
+    <mat-form-field appearance="outline">
+      <mat-label>Site</mat-label>
+      <mat-select name="siteId" [(ngModel)]="model.siteId" (selectionChange)="onSiteChange($event.value)" required>
+        @for (s of sites(); track s.siteId) {
+          <mat-option [value]="s.siteId">{{ s.siteCode }} — {{ s.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Severity</mat-label>
+      <mat-select name="severity" [(ngModel)]="model.severity" required>
+        @for (s of severities; track s) { <mat-option [value]="s">{{ s }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Node (optional)</mat-label>
+      <mat-select name="nodeId" [(ngModel)]="model.nodeId" (selectionChange)="onNodeChange($event.value)"
+                  [disabled]="!model.siteId || !nodes().length">
+        <mat-option [value]="null">— none —</mat-option>
+        @for (n of nodes(); track n.nodeId) {
+          <mat-option [value]="n.nodeId">{{ n.hostname }} ({{ n.model || 'node' }})</mat-option>
+        }
+      </mat-select>
+      @if (model.siteId && !nodes().length && !loadingNodes()) {
+        <mat-hint>No nodes at this site</mat-hint>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Interface (optional)</mat-label>
+      <mat-select name="interfaceId" [(ngModel)]="model.interfaceId"
+                  [disabled]="!model.nodeId || !interfaces().length">
+        <mat-option [value]="null">— none —</mat-option>
+        @for (i of interfaces(); track i.interfaceId) {
+          <mat-option [value]="i.interfaceId">{{ i.name }} ({{ i.capacityMbps }} Mbps)</mat-option>
+        }
+      </mat-select>
+      @if (model.nodeId && !interfaces().length && !loadingIfaces()) {
+        <mat-hint>No interfaces on this node</mat-hint>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="col-span-2">
+      <mat-label>Description</mat-label>
+      <textarea matInput rows="3" name="description" [(ngModel)]="model.description" required
+                placeholder="What's wrong? Be specific."></textarea>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">Report fault</button>
+  </mat-dialog-actions>
+</form>

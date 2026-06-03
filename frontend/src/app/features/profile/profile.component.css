@@ -1,0 +1,57 @@
+.page { padding: 24px; max-width: 920px; margin: 0 auto; }
+.hdr h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+.hdr p { font-size: 13px; color: var(--text-muted); margin: 0 0 20px; }
+.muted { color: var(--text-muted); }
+
+.grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
+/* ── Identity (avatar + name + chips) ─────────────────────────────── */
+.identity {
+  display: flex; align-items: center; gap: 20px;
+  padding: 20px 24px !important;
+}
+.avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: #fff;
+  display: grid; place-items: center;
+  font-size: 26px; font-weight: 600;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.who { flex: 1; }
+.who h2 { margin: 0 0 2px; font-size: 18px; font-weight: 600; }
+.who p { margin: 0 0 10px; font-size: 13px; }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.role-chip { background: #e3f2fd; color: #1565c0; font-size: 11px; font-weight: 600; }
+.status-chip { font-size: 11px; font-weight: 600; }
+.status-active   { background: #e8f5e9; color: #2e7d32; }
+.status-inactive { background: #ffebee; color: #c62828; }
+.status-suspended { background: #fff3e0; color: #ef6c00; }
+
+/* ── Form cards ──────────────────────────────────────────────────── */
+.form-card mat-card-header { margin-bottom: 12px; }
+.form-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  padding-top: 8px;
+}
+.full-width { width: 100%; grid-column: span 2; }
+.readonly input { color: var(--text-muted) !important; }
+
+.actions {
+  grid-column: span 2;
+  display: flex; justify-content: flex-end; gap: 8px;
+  margin-top: 4px;
+}
+.actions button mat-icon { margin-right: 4px; }
+
+/* ── Status message ──────────────────────────────────────────────── */
+.status-msg {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13.5px;
+}
+.status-msg.error   { background: #ffebee; color: #c62828; }
+.status-msg.success { background: #e8f5e9; color: #2e7d32; }

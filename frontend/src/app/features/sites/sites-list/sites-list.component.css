@@ -1,0 +1,9 @@
+.page { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.header { display: flex; align-items: center; margin-bottom: 16px; }
+.header h1 { margin: 0; }
+.spacer { flex: 1 1 auto; }
+.full-width { width: 100%; }
+.empty { text-align: center; padding: 32px; color: rgba(0,0,0,.5); }
+.status-active   { background: #e8f5e9; color: #2e7d32; }
+.status-maint    { background: #fff3e0; color: #ef6c00; }
+.status-inactive { background: #ffebee; color: #c62828; }

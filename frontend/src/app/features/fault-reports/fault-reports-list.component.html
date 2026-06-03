@@ -1,0 +1,77 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>Fault reports</h1>
+      <p class="muted">Reported network faults across all sites</p>
+    </div>
+    @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER','FIELD_ENGINEER')) {
+      <button mat-flat-button color="primary" (click)="openCreate()">
+        <mat-icon>add</mat-icon> Report new fault
+      </button>
+    }
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Site</th><th>Node</th><th>Interface</th>
+          <th>Reported by</th>
+          <th>Severity</th><th>Description</th><th>Status</th><th>Reported</th>
+          @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) { <th>Update</th> }
+        </tr>
+      </thead>
+      <tbody>
+        @for (f of rows(); track f.faultId) {
+          <tr>
+            <td class="num">{{ f.faultId }}</td>
+            <td>
+              @if (f.siteName) {
+                <div>{{ f.siteName }}</div>
+                <small class="muted">#{{ f.siteId }}</small>
+              } @else { — }
+            </td>
+            <td>
+              @if (f.nodeHostname) {
+                <div>{{ f.nodeHostname }}</div>
+                <small class="muted">#{{ f.nodeId }}</small>
+              } @else { <span class="muted">—</span> }
+            </td>
+            <td>
+              @if (f.interfaceName) {
+                <div>{{ f.interfaceName }}</div>
+                <small class="muted">#{{ f.interfaceId }}</small>
+              } @else { <span class="muted">—</span> }
+            </td>
+            <td>{{ f.reportedByName || '—' }}</td>
+            <td><span class="pri" [class]="'pri-' + (f.severity || '').toLowerCase()">{{ f.severity }}</span></td>
+            <td class="ellipsis">{{ f.description }}</td>
+            <td><span class="pill" [class]="'pill-' + (f.status || '').toLowerCase()">{{ f.status }}</span></td>
+            <td class="muted">{{ f.reportedAt | date:'short' }}</td>
+            @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER','MANAGER')) {
+              <td>
+                <button mat-icon-button [matMenuTriggerFor]="m"><mat-icon>more_vert</mat-icon></button>
+                <mat-menu #m="matMenu">
+                  @if (auth.hasRole('ADMIN','MANAGER','NETWORK_ENGINEER') && f.status !== 'CLOSED') {
+                    <button mat-menu-item (click)="escalate(f)">
+                      <mat-icon>confirmation_number</mat-icon>Escalate to ticket
+                    </button>
+                  }
+                  @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) {
+                    <button mat-menu-item (click)="updateStatus(f.faultId, 'IN_PROGRESS')"><mat-icon>play_arrow</mat-icon>Mark in progress</button>
+                    <button mat-menu-item (click)="updateStatus(f.faultId, 'RESOLVED')"><mat-icon>check_circle</mat-icon>Mark resolved</button>
+                    <button mat-menu-item (click)="updateStatus(f.faultId, 'CLOSED')"><mat-icon>archive</mat-icon>Close</button>
+                  }
+                </mat-menu>
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr><td colspan="10" class="empty">No fault reports yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

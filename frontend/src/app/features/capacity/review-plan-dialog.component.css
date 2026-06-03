@@ -1,0 +1,11 @@
+h2 { display: flex; align-items: center; gap: 8px; }
+h2.approve mat-icon { color: var(--success-fg) !important; }
+h2.reject  mat-icon { color: var(--danger-fg) !important; }
+.col { display: flex; flex-direction: column; gap: 4px; padding-top: 12px !important; }
+.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+           padding: 12px 14px; background: #f8fafc; border-radius: 6px;
+           border: 1px solid var(--border-soft); margin-bottom: 12px; font-size: 12.5px; }
+.summary .full { grid-column: span 2; }
+.summary .lbl { display: block; font-size: 10.5px; font-weight: 600;
+                text-transform: uppercase; letter-spacing: 0.04em;
+                color: var(--text-muted); margin-bottom: 2px; }

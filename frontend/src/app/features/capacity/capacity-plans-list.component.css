@@ -1,0 +1,52 @@
+.page { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+.hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+.hdr h1 { font-size: 20px; font-weight: 600; margin: 0; }
+.hdr p { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
+.muted { color: var(--text-muted); }
+.faint { color: var(--text-faint); }
+
+.panel { background: #fff; border: 1px solid var(--border-soft); border-radius: 8px;
+         overflow: hidden; }
+.scroll { overflow-x: auto; }
+.dt { width: 100%; border-collapse: collapse; font-size: 12.5px;
+      table-layout: fixed; }
+.dt th, .dt td { padding: 10px 14px; text-align: left;
+                 border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+.dt th { font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+         letter-spacing: 0.04em; color: var(--text-muted); background: #fafbfc; }
+.dt tbody tr:hover { background: rgba(15,23,42,.02); }
+.num { font-variant-numeric: tabular-nums; font-weight: 500; }
+.empty { text-align: center; padding: 32px; color: var(--text-faint); }
+
+.site-name { font-weight: 600; font-size: 12.5px; line-height: 1.2; }
+.site-sub  { font-size: 10.5px; color: var(--text-muted); margin-top: 2px;
+             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cap-change { display: flex; align-items: center; gap: 6px;
+              font-variant-numeric: tabular-nums; font-weight: 600; }
+.cap-cur   { color: var(--text-muted); text-decoration: line-through; }
+.cap-new   { color: var(--brand-700, #1d4ed8); }
+.cap-arrow { font-size: 14px !important; height: 14px !important; width: 14px !important;
+             color: var(--text-faint); }
+.cap-unit  { font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+             letter-spacing: 0.05em; margin-top: 1px; }
+
+.reason { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          max-width: 320px; }
+
+.pill { display: inline-block; font-size: 10px; font-weight: 600;
+        padding: 3px 9px; border-radius: 999px;
+        letter-spacing: 0.03em; text-transform: uppercase; }
+.pill-approved  { background: var(--success-bg); color: var(--success-fg); }
+.pill-pending, .pill-draft { background: var(--warn-bg); color: var(--warn-fg); }
+.pill-rejected  { background: var(--danger-bg); color: var(--danger-fg); }
+.pill-implemented { background: var(--info-bg); color: var(--info-fg); }
+
+.actions-cell { white-space: nowrap; }
+.act { line-height: 28px; min-height: 32px; padding: 0 12px; font-size: 12px;
+       margin-left: 4px; }
+.act mat-icon { font-size: 16px !important; height: 16px !important; width: 16px !important;
+                margin-right: 4px; vertical-align: middle; }
+.act-reject { background: #fff; }
+.faint { color: var(--text-faint); font-size: 11.5px; font-style: italic;
+         margin-left: 6px; }

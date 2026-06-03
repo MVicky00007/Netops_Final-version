@@ -1,0 +1,48 @@
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>Interfaces</h1>
+      <p class="muted">All network interfaces across every edge node</p>
+    </div>
+    @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) {
+      <button mat-flat-button color="primary" (click)="openCreate()">
+        <mat-icon>add</mat-icon> New interface
+      </button>
+    }
+  </div>
+
+  <div class="panel">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>ID</th><th>Interface</th><th>Node</th><th>Site</th>
+          <th>Type</th><th>Capacity (Mbps)</th><th>Admin</th><th>Oper</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (i of rows(); track i.interfaceId) {
+          <tr>
+            <td class="num">{{ i.interfaceId }}</td>
+            <td><strong>{{ i.name }}</strong></td>
+            <td>{{ i.nodeHostname || '—' }}</td>
+            <td>{{ i.siteName || '—' }}</td>
+            <td>{{ i.type || '—' }}</td>
+            <td class="num">{{ i.capacityMbps }}</td>
+            <td><span class="pill" [class]="'pill-' + (i.adminStatus || '').toLowerCase()">{{ i.adminStatus }}</span></td>
+            <td><span class="pill" [class]="'pill-' + (i.operStatus || '').toLowerCase()">{{ i.operStatus }}</span></td>
+            <td>
+              @if (auth.hasRole('ADMIN','NETWORK_ENGINEER','FIELD_ENGINEER')) {
+                <button mat-icon-button (click)="openEdit(i)" matTooltip="Edit">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="9" class="empty">No interfaces yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

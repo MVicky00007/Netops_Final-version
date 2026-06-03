@@ -1,0 +1,49 @@
+<div class="login-wrap">
+  <mat-card class="login-card">
+    <div class="brand">
+      <div class="logo"><mat-icon>cell_tower</mat-icon></div>
+      <span class="brand-name">NetOpsOne</span>
+    </div>
+
+    <mat-card-content>
+      <h2>Sign in</h2>
+      <p class="muted">Welcome back. Enter your details to continue.</p>
+
+      @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+      <form (ngSubmit)="submit()" #f="ngForm">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" name="email" [(ngModel)]="email" required autocomplete="email">
+          <mat-icon matSuffix>email</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput [type]="hide() ? 'password' : 'text'" name="password"
+                 [(ngModel)]="password" required autocomplete="current-password">
+          <button type="button" mat-icon-button matSuffix (click)="hide.set(!hide())">
+            <mat-icon>{{ hide() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </mat-form-field>
+
+        @if (errorMsg()) {
+          <div class="error-banner">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ errorMsg() }}</span>
+          </div>
+        }
+
+        <button mat-flat-button color="primary" type="submit" class="full-width submit-btn"
+                [disabled]="!f.form.valid || loading()">
+          @if (loading()) { Signing in… } @else { Sign in }
+        </button>
+      </form>
+
+      <div class="alt-actions">
+        <a mat-button routerLink="/signup">Create an account</a>
+        <a mat-button routerLink="/forgot-password">Forgot password?</a>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

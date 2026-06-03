@@ -1,0 +1,5 @@
+.page { padding: 24px; max-width: 900px; margin: 0 auto; }
+mat-card { margin-top: 16px; }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 16px; }
+.col-span-2 { grid-column: span 2; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }

@@ -1,0 +1,157 @@
+<div class="dashboard">
+
+  <!-- ── Header strip — compact, single line ─────────────────── -->
+  <header class="header">
+    <div>
+      <div class="greeting">{{ greeting() }}, <strong>{{ userName() }}</strong></div>
+      <div class="header-meta">
+        <span class="role-tag" [class]="'role-' + roleClass()">{{ auth.role() }}</span>
+        <span class="dot">·</span>
+        <span class="time">{{ now | date:'EEE, d MMM · h:mm a' }}</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      @for (a of quickActions().slice(0, 2); track a.route) {
+        <a [routerLink]="a.route" class="qa-link">
+          <mat-icon>{{ a.icon }}</mat-icon>
+          <span>{{ a.label }}</span>
+        </a>
+      }
+    </div>
+  </header>
+
+  @if (loading()) { <mat-progress-bar mode="indeterminate" /> }
+
+  <!-- ── Stats row — compact cards ───────────────────────────── -->
+  <section class="stats">
+    @for (s of statCards(); track s.label) {
+      <a class="stat" [class]="'stat-' + s.color"
+         [routerLink]="s.route || null"
+         [matTooltip]="s.route ? 'Open ' + s.label : ''">
+        <div class="stat-head">
+          <mat-icon>{{ s.icon }}</mat-icon>
+          <span class="stat-label">{{ s.label }}</span>
+        </div>
+        <div class="stat-foot">
+          <span class="stat-value">{{ s.value }}</span>
+          @if (s.subtitle) { <span class="stat-sub">{{ s.subtitle }}</span> }
+        </div>
+      </a>
+    }
+  </section>
+
+  <!-- ── Two-col body ────────────────────────────────────────── -->
+  <section class="body">
+
+    <!-- LEFT — activity feed -->
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">{{ activityTitle() }}</div>
+          <div class="panel-sub">{{ activitySubtitle() }}</div>
+        </div>
+        <a class="see-all" [routerLink]="activityLink()">View all
+          <mat-icon>arrow_forward</mat-icon>
+        </a>
+      </div>
+      <div class="panel-body">
+
+        @if (auth.hasRole('ADMIN', 'AUDITOR') && stats()?.recentAuditLogs?.length) {
+          @for (log of stats()!.recentAuditLogs; track log.logId) {
+            <div class="row-item">
+              <div class="row-icon icon-info">
+                <mat-icon>{{ actionIcon(log.action) }}</mat-icon>
+              </div>
+              <div class="row-body">
+                <div class="row-title">
+                  <strong>{{ log.action }}</strong> <span class="muted">on {{ log.resourceType }}</span>
+                </div>
+                <div class="row-meta">{{ log.userName || 'system' }} · {{ log.timestamp | date:'short' }}</div>
+              </div>
+            </div>
+          }
+        } @else if (auth.hasRole('ADMIN') && stats()?.pendingUsersList?.length) {
+          @for (u of stats()!.pendingUsersList; track u.userId) {
+            <div class="row-item">
+              <div class="row-icon icon-warn">
+                <mat-icon>person_add</mat-icon>
+              </div>
+              <div class="row-body">
+                <div class="row-title">{{ u.name }} <span class="muted">· {{ u.role }}</span></div>
+                <div class="row-meta">{{ u.email }}</div>
+              </div>
+              <a class="row-action" routerLink="/admin/pending-users">Review</a>
+            </div>
+          }
+        } @else if (stats()?.recentSites?.length) {
+          @for (s of stats()!.recentSites; track s.siteId) {
+            <a class="row-item link" [routerLink]="['/sites', s.siteId]">
+              <div class="row-icon icon-primary">
+                <mat-icon>business</mat-icon>
+              </div>
+              <div class="row-body">
+                <div class="row-title">{{ s.name }}</div>
+                <div class="row-meta">{{ s.siteCode }} · {{ s.region || 'No region' }}</div>
+              </div>
+              <span class="status-pill" [class]="'pill-' + s.status.toLowerCase()">{{ s.status }}</span>
+            </a>
+          }
+        } @else if (!loading()) {
+          <div class="empty">
+            <mat-icon>inbox</mat-icon>
+            <p>Nothing to show yet.</p>
+          </div>
+        }
+
+      </div>
+    </div>
+
+    <!-- RIGHT — quick actions + inbox -->
+    <div class="right-col">
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Quick actions</div>
+        </div>
+        <div class="qa-grid">
+          @for (a of quickActions(); track a.route) {
+            <a class="qa-tile" [routerLink]="a.route">
+              <mat-icon>{{ a.icon }}</mat-icon>
+              <span>{{ a.label }}</span>
+            </a>
+          }
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Your inbox</div></div>
+        <div class="panel-body inbox">
+          <a class="inbox-row" routerLink="/tasks">
+            <mat-icon class="ib-icon">assignment</mat-icon>
+            <div class="ib-body">
+              <div class="ib-title">My tasks</div>
+              <div class="ib-sub">{{ stats()?.myPendingTasks || 0 }} pending · {{ stats()?.myTasks || 0 }} total</div>
+            </div>
+            @if (stats()?.myPendingTasks) { <span class="badge">{{ stats()!.myPendingTasks }}</span> }
+          </a>
+          <a class="inbox-row" routerLink="/notifications">
+            <mat-icon class="ib-icon">notifications</mat-icon>
+            <div class="ib-body">
+              <div class="ib-title">Notifications</div>
+              <div class="ib-sub">{{ stats()?.myUnreadNotifications || 0 }} unread</div>
+            </div>
+            @if (stats()?.myUnreadNotifications) { <span class="badge">{{ stats()!.myUnreadNotifications }}</span> }
+          </a>
+          <a class="inbox-row" routerLink="/profile">
+            <mat-icon class="ib-icon">account_circle</mat-icon>
+            <div class="ib-body">
+              <div class="ib-title">Profile</div>
+              <div class="ib-sub">{{ auth.email() }}</div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>

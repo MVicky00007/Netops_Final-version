@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>
+  <mat-icon>person_add</mat-icon>
+  {{ data.ticket.assignedToName ? 'Reassign' : 'Assign' }} ticket #{{ data.ticket.ticketId }}
+</h2>
+<form #f="ngForm" (ngSubmit)="submit()">
+  <mat-dialog-content class="col">
+    @if (data.ticket.assignedToName) {
+      <p class="muted">Currently assigned to <strong>{{ data.ticket.assignedToName }}</strong>.</p>
+    }
+    <mat-form-field appearance="outline">
+      <mat-label>Assign to</mat-label>
+      <mat-select name="assignedToId" [(ngModel)]="assignedToId" required>
+        @for (u of assignees(); track u.userId) {
+          <mat-option [value]="u.userId">{{ u.name || u.email }} — {{ u.role }}</mat-option>
+        }
+      </mat-select>
+      <mat-hint>Tickets can only be assigned to a field engineer</mat-hint>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!f.form.valid">Assign</button>
+  </mat-dialog-actions>
+</form>

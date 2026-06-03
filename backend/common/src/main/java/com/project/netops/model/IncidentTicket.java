@@ -3,7 +3,6 @@ package com.project.netops.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "incident_tickets")
@@ -50,9 +49,6 @@ public class IncidentTicket {
 
     @OneToOne(mappedBy = "ticket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private SLARecord slaRecord;
-
-    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<TicketAttachment> attachments;
 
     @PrePersist
     protected void onCreate() {
